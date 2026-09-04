@@ -6,6 +6,7 @@ export type LabKind =
   | "titration" | "enzyme" | "redox" | "arrhenius" | "flame" | "calo" | "molarity" | "buffer" | "lechatelier"
   | "genetics" | "culture" | "mitosis" | "lotka" | "pcr" | "pedigree" | "bloodtype" | "yeast" | "elodea"
   | "seriesparallel" | "rcfilter" | "logicgate" | "timer555" | "bjt" | "rlc" | "opamp" | "mosfet" | "wheatstone" | "pwm"
+  | "flipflop" | "counter" | "adder" | "alu" | "cpu" | "linefollower" | "robotarm" | "obstacle" | "blink" | "adcpot" | "pwmservo"
   | "ecg" | "bloodpressure" | "spirometry" | "spo2" | "renal" | "glucose" | "reflex" | "pvloop";
 
 export interface Experiment {
@@ -27,7 +28,7 @@ export const SUBJECTS: Record<Subject, { fa: string; en: string; color: string; 
   physics: { fa: "فیزیک", en: "PHYSICS", color: "#56b8ff", soft: "rgba(86,184,255,0.13)", blurb: "از مکانیک نیوتنی تا کوانتوم — موتور انتگرال‌گیری سیمپلتیک" },
   chemistry: { fa: "شیمی", en: "CHEMISTRY", color: "#f2a83b", soft: "rgba(242,168,59,0.13)", blurb: "تیتراسیون، تعادل و سینتیک — داده‌های مرجع NIST و PubChem" },
   biology: { fa: "زیست‌شناسی", en: "BIOLOGY", color: "#a5d95c", soft: "rgba(165,217,92,0.13)", blurb: "از مولکول تا اکوسیستم — شبیه‌سازی سلول، ژنتیک و جمعیت" },
-  electronics: { fa: "الکترونیک", en: "ELECTRONICS", color: "#b388ff", soft: "rgba(179,136,255,0.13)", blurb: "شاخه مستقل مدار و نیمه‌هادی — از قانون اهم تا ماسفت و تشدید" },
+  electronics: { fa: "الکترونیک", en: "ELECTRONICS", color: "#b388ff", soft: "rgba(179,136,255,0.13)", blurb: "شاخه مستقل و کامل — مدار منطقی، معماری کامپیوتر، رباتیک و میکروکنترلر آردوینو" },
   medicine: { fa: "پزشکی", en: "MEDICINE", color: "#ff6f61", soft: "rgba(255,111,97,0.13)", blurb: "فیزیولوژی بالینی — ECG، فشار خون، اسپیرومتری و حلقه PV" },
 };
 
@@ -172,6 +173,39 @@ export const EXPERIMENTS: Experiment[] = [
   E("e-pwm", "electronics", "pwm", "کنترل موتور با PWM", "توان",
     "ولتاژ میانگین Duty×V؛ موتور چرخان با RPM واقعی، اثر بار و کلیدزنی ماسفت.",
     ["HS-PS3-5"], "IB DP Physics 5.3", "Enrichment", 2, 25),
+  E("e-flipflop", "electronics", "flipflop", "فلیپ‌فلاپ و شیفت‌رجیستر", "مدارهای منطقی — ترتیبی",
+    "فلیپ‌فلاپ SR و D با پالس کلاک تعاملی و شیفت‌رجیستر ۴ بیتی با خوانش دودویی، دسیمال و هگز.",
+    ["HS-PS2-5"], "IB DP Physics 5.5", "Enrichment", 2, 25),
+  E("e-counter", "electronics", "counter", "شمارنده ۴ بیتی و تقسیم فرکانس", "مدارهای منطقی — ترتیبی",
+    "شمارنده آبشاری با موج‌های زنده Q0 تا Q3؛ حالت دودویی و BCD و بارگذاری مستقیم بیت‌ها.",
+    ["HS-PS2-5"], "IB DP Physics 5.5", "Enrichment", 2, 25),
+  E("e-adder", "electronics", "adder", "جمع‌کننده ۴ بیتی موازی", "مدارهای منطقی — ترکیبی",
+    "جمع‌کننده کامل با انتشار موجی رقم نقلی؛ بیت‌های کلیک‌پذیر، سرریز و جدول صحت FA.",
+    ["HS-PS2-5"], "IB DP Physics 5.5", "Enrichment", 2, 25),
+  E("e-alu", "electronics", "alu", "واحد حساب و منطق ۸ بیتی", "معماری کامپیوتر",
+    "هشت عملگر AND تا شیفت با بیت‌های تعاملی؛ پرچم‌های Z، N، C و V مانند پردازنده واقعی.",
+    ["HS-PS2-5"], "IB DP Physics 5.5", "Enrichment", 3, 30),
+  E("e-cpu", "electronics", "cpu", "ماشین فون‌نویمان — ریزپردازنده", "معماری کامپیوتر",
+    "پردازنده ۸ بیتی با برنامه قابل ویرایش، اجرای تک‌گام یا پیوسته، چرخه fetch–decode–execute و ثبت‌های زنده.",
+    ["HS-PS2-5"], "IB DP Physics 5.5", "Enrichment", 3, 40),
+  E("e-linefollower", "electronics", "linefollower", "ربات تعقیب خط", "رباتیک",
+    "ربات سه‌سنسوره با کنترل تناسبی؛ تنظیم بهره، سرعت و آستانه و سه مسیر با پیچیدگی متفاوت.",
+    ["HS-PS2-5"], "IB DP Physics 5.5", "Enrichment", 2, 30),
+  E("e-robotarm", "electronics", "robotarm", "بازوی رباتیک و سینماتیک معکوس", "رباتیک",
+    "بازوی دو مفصله با هدف کشیدنی؛ حل لحظه‌ای IK با قانون کسینوس‌ها و دو حالت آرنج.",
+    ["HS-PS2-5"], "IB DP Physics 5.5", "Enrichment", 3, 30),
+  E("e-obstacle", "electronics", "obstacle", "ربات اجتناب از مانع", "رباتیک",
+    "سنسور اولتراسونیک با مخروط دید؛ افزودن مانع با کلیک، فرمان چرخش و ثبت تصمیم‌ها.",
+    ["HS-PS2-5"], "IB DP Physics 5.5", "Enrichment", 2, 30),
+  E("e-blink", "electronics", "blink", "آردوینو: GPIO و چشمک‌زن", "میکروکنترلر",
+    "برد Uno شبیه‌سازی‌شده با کد زنده، مانیتور سریال و الگوهای چشمک، تنفس PWM و مورس SOS.",
+    ["HS-PS2-5"], "IB DP Physics 5.3", "Enrichment", 1, 20),
+  E("e-adcpot", "electronics", "adcpot", "آردوینو: ADC و سنسور آنالوگ", "میکروکنترلر",
+    "مبدل ۱۰ بیتی با پتانسیومتر کشیدنی، فتوسل و ترمیستور؛ پلاتر سریال و اثر Vref بر رزولوشن.",
+    ["HS-PS2-5"], "IB DP Physics 5.3", "Enrichment", 2, 25),
+  E("e-pwmservo", "electronics", "pwmservo", "آردوینو: سروو و map()", "میکروکنترلر",
+    "زنجیره پتانسیومتر→ADC→map()→سروو با پالس ۱۰۰۰ تا ۲۰۰۰ میکروثانیه و نمودار زاویه زنده.",
+    ["HS-PS2-5"], "IB DP Physics 5.3", "Enrichment", 2, 25),
 
   // ---------------- MEDICINE (8) ----------------
   E("m-ecg", "medicine", "ecg", "نوار قلب (ECG) و ریتم", "فیزیولوژی قلب",

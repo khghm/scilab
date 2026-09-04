@@ -21,6 +21,10 @@ import { MitosisLab, LotkaLab, PcrLab } from "./labs/BioC";
 import { PedigreeLab, BloodTypeLab, YeastLab } from "./labs/BioD";
 import { RlcLab, OpampLab, MosfetLab } from "./labs/ElecX";
 import { WheatstoneLab, PwmLab } from "./labs/ElecMedA";
+import { FlipFlopLab, CounterLab, AdderLab } from "./labs/LogicLabs";
+import { AluLab, CpuLab } from "./labs/ArchLabs";
+import { LineFollowerLab, RobotArmLab, ObstacleLab } from "./labs/RoboticsLabs";
+import { BlinkLab, AdcLab, PwmServoLab } from "./labs/ArduinoLabs";
 import { RenalLab, GlucoseLab, ReflexLab, PvLoopLab } from "./labs/MedX";
 import { LogoMark } from "./components/icons";
 import { faDigits, useNow } from "./lib/utils";
@@ -73,6 +77,17 @@ const LABS: Record<LabKind, ComponentType<{ exp: Experiment; onBack: () => void;
   mosfet: MosfetLab,
   wheatstone: WheatstoneLab,
   pwm: PwmLab,
+  flipflop: FlipFlopLab,
+  counter: CounterLab,
+  adder: AdderLab,
+  alu: AluLab,
+  cpu: CpuLab,
+  linefollower: LineFollowerLab,
+  robotarm: RobotArmLab,
+  obstacle: ObstacleLab,
+  blink: BlinkLab,
+  adcpot: AdcLab,
+  pwmservo: PwmServoLab,
   // medicine
   ecg: EcgLab,
   bloodpressure: BloodPressureLab,
