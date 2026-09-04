@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentType } from "react";
-import { EXPERIMENTS, SUBJECT_ORDER, SUBJECTS, liveOf, type Experiment, type LabKind } from "./data/catalog";
+import { EXPERIMENTS, type Experiment, type LabKind } from "./data/catalog";
 import type { LabMode } from "./components/LabShell";
 import { HomeView } from "./components/HomeView";
 import { PendulumLab, ProjectileLab } from "./labs/PhysicsLabs";
@@ -10,27 +10,78 @@ import { SeriesParallelLab, RcFilterLab, LogicGateLab } from "./labs/Electronics
 import { Timer555Lab, BjtLab } from "./labs/ElectronicsAdvLabs";
 import { EcgLab, BloodPressureLab } from "./labs/MedLabs";
 import { SpirometryLab, Spo2Lab } from "./labs/MedLabs2";
+import { CarnotLab, RcLab, DopplerLab } from "./labs/PhysA";
+import { QuantumBoxLab, StandingWaveLab, YoungLab } from "./labs/PhysB";
+import { SpringLab, FreeFallLab, CollisionLab } from "./labs/PhysC";
+import { InclineLab, DecayLab } from "./labs/PhysD";
+import { RedoxLab, ArrheniusLab, FlameLab } from "./labs/ChemA";
+import { CaloLab, MolarityLab, BufferLab } from "./labs/ChemB";
+import { LeChatelierLab, ElodeaLab } from "./labs/ChemBioA";
+import { MitosisLab, LotkaLab, PcrLab } from "./labs/BioC";
+import { PedigreeLab, BloodTypeLab, YeastLab } from "./labs/BioD";
+import { RlcLab, OpampLab, MosfetLab } from "./labs/ElecX";
+import { WheatstoneLab, PwmLab } from "./labs/ElecMedA";
+import { RenalLab, GlucoseLab, ReflexLab, PvLoopLab } from "./labs/MedX";
 import { LogoMark } from "./components/icons";
 import { faDigits, useNow } from "./lib/utils";
 
 const LABS: Record<LabKind, ComponentType<{ exp: Experiment; onBack: () => void; initMode?: LabMode }>> = {
+  // physics
   pendulum: PendulumLab,
   projectile: ProjectileLab,
   snell: SnellLab,
   photo: PhotoelectricLab,
+  carnot: CarnotLab,
+  rc: RcLab,
+  doppler: DopplerLab,
+  qbox: QuantumBoxLab,
+  standing: StandingWaveLab,
+  young: YoungLab,
+  spring: SpringLab,
+  freefall: FreeFallLab,
+  collision: CollisionLab,
+  incline: InclineLab,
+  decay: DecayLab,
+  // chemistry
   titration: TitrationLab,
   enzyme: EnzymeLab,
+  redox: RedoxLab,
+  arrhenius: ArrheniusLab,
+  flame: FlameLab,
+  calo: CaloLab,
+  molarity: MolarityLab,
+  buffer: BufferLab,
+  lechatelier: LeChatelierLab,
+  // biology
   genetics: GeneticsLab,
   culture: CultureLab,
+  mitosis: MitosisLab,
+  lotka: LotkaLab,
+  pcr: PcrLab,
+  pedigree: PedigreeLab,
+  bloodtype: BloodTypeLab,
+  yeast: YeastLab,
+  elodea: ElodeaLab,
+  // electronics
   seriesparallel: SeriesParallelLab,
   rcfilter: RcFilterLab,
   logicgate: LogicGateLab,
   timer555: Timer555Lab,
   bjt: BjtLab,
+  rlc: RlcLab,
+  opamp: OpampLab,
+  mosfet: MosfetLab,
+  wheatstone: WheatstoneLab,
+  pwm: PwmLab,
+  // medicine
   ecg: EcgLab,
   bloodpressure: BloodPressureLab,
   spirometry: SpirometryLab,
   spo2: Spo2Lab,
+  renal: RenalLab,
+  glucose: GlucoseLab,
+  reflex: ReflexLab,
+  pvloop: PvLoopLab,
 };
 
 export default function App() {
@@ -82,7 +133,6 @@ export default function App() {
           )}
 
           <div className="flex-1" />
-
           <span className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border border-edge text-[11px] text-fog">
             <span className="w-1.5 h-1.5 rounded-full bg-lime pulse-dot" />
             موتور فیزیک v3.2
@@ -95,11 +145,7 @@ export default function App() {
         {inLab && exp?.lab ? (
           (() => {
             const LabComp = LABS[exp.lab!];
-            return LabComp ? (
-              <LabComp key={`${sel!.id}-${sel!.mode ?? "n"}`} exp={exp} onBack={back} initMode={sel!.mode} />
-            ) : (
-              <HomeView onOpen={open} />
-            );
+            return <LabComp key={`${sel!.id}-${sel!.mode ?? "n"}`} exp={exp} onBack={back} initMode={sel!.mode} />;
           })()
         ) : (
           <HomeView onOpen={open} />
@@ -107,33 +153,22 @@ export default function App() {
       </main>
 
       <footer className="relative z-10 border-t border-edge/80 bg-deep/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 grid sm:grid-cols-3 gap-8">
           <div>
             <div className="flex items-center gap-2.5 mb-3">
               <LogoMark c="w-8 h-8" />
               <span className="font-display text-lg text-snow">SciLab Immersive</span>
             </div>
             <p className="text-[12.5px] text-fog leading-7">
-              پلتفرم شبیه‌سازی تعاملی با پنج شاخه مستقل — فیزیک، شیمی، زیست‌شناسی،
-              <b className="text-violet"> الکترونیک</b> و <b className="text-coral">پزشکی</b> — با پشتیبانی VR/AR و به زبان فارسی.
+              پلتفرم شبیه‌سازی تعاملی با پنج شاخه مستقل — فیزیک، شیمی، زیست‌شناسی، الکترونیک و پزشکی —
+              با پشتیبانی VR/AR برای کلاس‌های NGSS، IB و A‑Level، به زبان فارسی.
             </p>
-          </div>
-          <div>
-            <h4 className="font-display text-lg text-snow mb-3">شاخه‌ها</h4>
-            <ul className="space-y-2 text-[12.5px]">
-              {SUBJECT_ORDER.map((s) => (
-                <li key={s} className="text-fog flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: SUBJECTS[s].color }} />
-                  {SUBJECTS[s].fa} — {faDigits(liveOf(s).length)} آزمایش زنده
-                </li>
-              ))}
-            </ul>
           </div>
           <div>
             <h4 className="font-display text-lg text-snow mb-3">چارچوب‌های آموزشی</h4>
             <ul className="space-y-2 text-[12.5px] text-fog">
               <li>NGSS — Science & Engineering Practices</li>
-              <li>IB Diploma Programme — SL / HL</li>
+              <li>IB Diploma Programme — SL / HL Sciences</li>
               <li>A‑Level — AQA & Cambridge Practicals</li>
             </ul>
           </div>
@@ -142,14 +177,14 @@ export default function App() {
             <ul className="space-y-2 text-[12.5px] text-fog">
               <li>موتور انتگرال‌گیری نیمه‌ضمنی · ۲۴۰ گام/ثانیه</li>
               <li>پایگاه‌های مرجع: NIST · PubChem · PDB · BRENDA</li>
-              <li>خروجی CSV · LaTeX · JSON — WebXR Stereoscopic</li>
+              <li>خروجی: CSV · LaTeX · JSON — WebXR Stereoscopic</li>
             </ul>
           </div>
         </div>
         <div className="border-t border-edge/60">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-2 text-[11.5px] text-fog">
-            <span>© {faDigits(1404)}–{faDigits(2026)} SciLab Immersive — ساخته‌شده برای کلاس‌های علوم</span>
-            <span className="font-mono text-[10px] tracking-widest text-edge2">HIGH‑FIDELITY · REAL‑TIME · 5 TRACKS</span>
+            <span>© SciLab Immersive — ساخته‌شده برای کلاس‌های علوم</span>
+            <span className="font-mono text-[10px] tracking-widest text-edge2">HIGH‑FIDELITY · REAL‑TIME · STANDARDS‑ALIGNED</span>
           </div>
         </div>
       </footer>

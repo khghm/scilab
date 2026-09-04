@@ -510,7 +510,10 @@ Cardiac output  & 5.04 L/min \\\\
                 از هر شاخه، یک آزمایشِ پرچم‌دار
               </h2>
               <p className="mt-2 text-fog text-[14px] leading-7 max-w-2xl">
-                پنج دکمه، پنج شاخه مستقل — همین حالا اولین داده را ثبت کنید؛ بقیه {faDigits(EXPERIMENTS.length - live.length)} آزمایش در صف توسعه با همان موتور اجرا خواهند شد.
+                پنج دکمه، پنج شاخه مستقل — همین حالا اولین داده را ثبت کنید؛
+                {EXPERIMENTS.length - live.length > 0
+                  ? ` بقیه ${faDigits(EXPERIMENTS.length - live.length)} آزمایش در صف توسعه با همان موتور اجرا خواهند شد.`
+                  : ` هر ${faDigits(live.length)} آزمایشگاه پلتفرم زنده و آماده اجراست.`}
               </p>
               <div className="mt-7 flex flex-wrap gap-2.5">
                 {flagships.map((e) => (
