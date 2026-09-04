@@ -1,7 +1,14 @@
 import type { SeriesDef } from "../components/Chart";
+import * as chemKit from "./chem";
 
 export function sr(name: string, color: string, arr: { x: number; y: number }[]): SeriesDef {
   return { name, color, ["data"]: arr };
+}
+
+/** rich layered chemistry scene: ambient gradient + molecular lattice + lab bench */
+export function chemScene(ctx: CanvasRenderingContext2D, W: number, H: number, ar: boolean, t = 0, benchY = 462) {
+  chemKit.chemBg(ctx, W, H, ar, t);
+  if (!ar) chemKit.bench(ctx, W, H, benchY);
 }
 
 export const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));

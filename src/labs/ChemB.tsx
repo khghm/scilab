@@ -3,7 +3,8 @@ import { LiveChart } from "../components/Chart";
 import { LabShell, type FeedItem, type LabMode } from "../components/LabShell";
 import { Slider } from "../components/ui";
 import { fmt, useForce, useRaf } from "../lib/utils";
-import { bg, hud, FA, MONO, rr, sr } from "./draw";
+import { chemScene, hud, FA, MONO, rr, sr } from "./draw";
+import * as chem from "./chem";
 import type { Experiment } from "../data/catalog";
 
 type Props = { exp: Experiment; onBack: () => void; initMode?: LabMode };
@@ -44,17 +45,31 @@ export function CaloLab({ exp, onBack, initMode }: Props) {
     }
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
-    bg(ctx, 960, 560, mode === "ar");
-    const cx = 320, cy = 340;
-    ctx.fillStyle = "#dfe8ea";
-    ctx.beginPath(); ctx.moveTo(cx - 130, cy - 140); ctx.lineTo(cx - 105, cy + 130); ctx.quadraticCurveTo(cx, cy + 152, cx + 105, cy + 130); ctx.lineTo(cx + 130, cy - 140); ctx.closePath(); ctx.fill();
-    if (S.insul > 0.6) { ctx.fillStyle = "#c3cfd2"; ctx.fillRect(cx - 140, cy - 158, 280, 20); }
+    chemScene(ctx, 960, 560, mode === "ar", performance.now() / 1000);
+    const cx = 320, cy = 330;
     const warm = Math.max(0, Math.min(1, (S.T - 22) / Math.max(dTIdeal, 1)));
-    ctx.fillStyle = `rgba(${Math.round(120 + warm * 135)},${Math.round(180 - warm * 60)},${Math.round(230 - warm * 120)},0.8)`;
+    // warm glow behind cup
+    if (mode !== "ar") chem.glow(ctx, cx, cy + 40, 200, [255, 140, 80], 0.10 + warm * 0.12);
+    // styrofoam cup with shading
+    const cg = ctx.createLinearGradient(cx - 130, 0, cx + 130, 0);
+    cg.addColorStop(0, "#c8d4d8"); cg.addColorStop(0.5, "#eef4f6"); cg.addColorStop(1, "#b8c6cb");
+    ctx.fillStyle = cg;
+    ctx.beginPath(); ctx.moveTo(cx - 130, cy - 140); ctx.lineTo(cx - 105, cy + 130); ctx.quadraticCurveTo(cx, cy + 152, cx + 105, cy + 130); ctx.lineTo(cx + 130, cy - 140); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = "rgba(4,25,29,0.3)"; ctx.lineWidth = 2; ctx.stroke();
+    if (S.insul > 0.6) {
+      ctx.fillStyle = "#d5dee1";
+      ctx.beginPath(); ctx.roundRect(cx - 142, cy - 160, 284, 22, 6); ctx.fill();
+      ctx.strokeStyle = "rgba(4,25,29,0.25)"; ctx.stroke();
+    }
+    // liquid with temperature color + glow
+    ctx.fillStyle = `rgba(${Math.round(120 + warm * 135)},${Math.round(180 - warm * 60)},${Math.round(230 - warm * 120)},0.85)`;
     ctx.beginPath(); ctx.moveTo(cx - 122, cy - 120); ctx.lineTo(cx - 102, cy + 126); ctx.quadraticCurveTo(cx, cy + 146, cx + 102, cy + 126); ctx.lineTo(cx + 122, cy - 120); ctx.closePath(); ctx.fill();
+    chem.glow(ctx, cx, cy, 110, [255, 160, 90], warm * 0.3);
+    if (S.mixed) chem.bubbles(ctx, cx - 90, cy + 120, 180, 160, 10, performance.now() / 1000, "255,255,255", 0.7);
+    // stir bar
     const ang = S.running ? performance.now() / 120 : 0;
     ctx.save(); ctx.translate(cx, cy + 110); ctx.rotate(ang);
-    ctx.fillStyle = "#04191d"; ctx.fillRect(-24, -4, 48, 8); ctx.restore();
+    ctx.fillStyle = "#04191d"; ctx.beginPath(); ctx.roundRect(-24, -4, 48, 8, 4); ctx.fill(); ctx.restore();
     hud(ctx, 120, cy + 160, 400, 64, mode === "ar");
     ctx.font = `600 22px ${MONO}`; ctx.fillStyle = "#e9f6f3";
     ctx.fillText(`T = ${fmt(S.T, 2)} °C`, 140, cy + 190);
@@ -158,22 +173,28 @@ export function MolarityLab({ exp, onBack, initMode }: Props) {
     }
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
-    bg(ctx, 960, 560, mode === "ar");
-    const bx = 260, bw = 220, bot = 470, liqH = Math.min(300, S.vol * 150);
-    ctx.strokeStyle = "rgba(233,246,243,0.55)"; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(bx, 120); ctx.lineTo(bx, bot); ctx.lineTo(bx + bw, bot); ctx.lineTo(bx + bw, 120); ctx.stroke();
+    chemScene(ctx, 960, 560, mode === "ar", performance.now() / 1000);
+    const bx = 260, bw = 220, bot = 462, liqH = Math.min(300, S.vol * 150);
     const tint = Math.min(1, M / 2);
-    ctx.fillStyle = `rgba(242,168,59,${(0.12 + tint * 0.4).toFixed(2)})`;
-    ctx.fillRect(bx + 4, bot - liqH, bw - 8, liqH - 4);
+    const bcx = bx + bw / 2;
+    // beaker glass
+    chem.beaker(ctx, bcx, bot, bw / 2, 340);
+    // liquid
+    const frac = Math.max(0.05, liqH / 340);
+    chem.beakerLiquid(ctx, bcx, bot, bw / 2, 340, frac, [242, 168, 59], 0.25 + tint * 0.5);
+    chem.glow(ctx, bcx, bot - liqH / 2, 130, [242, 168, 59], 0.08 + tint * 0.1);
+    // solute particles
     const nShow = Math.min(60, Math.round(S.moles * 60));
-    ctx.fillStyle = "#f2a83b";
     for (let i = 0; i < nShow; i++) {
       const p = particles[i];
-      ctx.beginPath(); ctx.arc(bx + 8 + p.x * (bw - 16), bot - liqH + 8 + p.y * (liqH - 16), 4.5, 0, Math.PI * 2); ctx.fill();
+      const px = bx + 10 + p.x * (bw - 20), py = bot - liqH + 10 + p.y * (liqH - 22);
+      chem.glow(ctx, px, py, 9, [242, 168, 59], 0.4);
+      ctx.fillStyle = "#f2a83b";
+      ctx.beginPath(); ctx.arc(px, py, 4.2, 0, Math.PI * 2); ctx.fill();
     }
-    ctx.fillStyle = "#8fbcb8"; ctx.font = `12px ${FA}`;
-    ctx.fillText(`n = ${fmt(S.moles, 2)} mol`, bx, bot + 30);
-    ctx.fillText(`V = ${fmt(S.vol, 1)} L`, bx + 130, bot + 30);
+    ctx.fillStyle = "#c9d8d6"; ctx.font = `12px ${FA}`;
+    ctx.fillText(`n = ${fmt(S.moles, 2)} mol`, bx, bot + 34);
+    ctx.fillText(`V = ${fmt(S.vol, 1)} L`, bx + 130, bot + 34);
     hud(ctx, 560, 160, 330, 170, mode === "ar");
     ctx.font = `700 24px ${MONO}`; ctx.fillStyle = "#f2a83b";
     ctx.fillText(`M = ${fmt(M, 2)} mol/L`, 580, 200);
@@ -251,17 +272,17 @@ export function BufferLab({ exp, onBack, initMode }: Props) {
   useRaf(() => {
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
-    bg(ctx, 960, 560, mode === "ar");
-    const bx = 260, bot = 460;
-    ctx.strokeStyle = "rgba(233,246,243,0.55)"; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(bx - 80, 160); ctx.lineTo(bx - 72, bot); ctx.quadraticCurveTo(bx, bot + 16, bx + 72, bot); ctx.lineTo(bx + 80, 160); ctx.stroke();
-    const col = pH < 4 ? "#ff6f61" : pH < 5.6 ? "#f2a83b" : "#56b8ff";
-    ctx.fillStyle = `${col}44`;
-    ctx.beginPath(); ctx.moveTo(bx - 76, 210); ctx.lineTo(bx - 70, bot - 4); ctx.quadraticCurveTo(bx, bot + 10, bx + 70, bot - 4); ctx.lineTo(bx + 76, 210); ctx.closePath(); ctx.fill();
-    ctx.font = `700 42px ${MONO}`; ctx.fillStyle = col; ctx.textAlign = "center";
-    ctx.fillText(fmt(pH, 2), bx, 330);
+    chemScene(ctx, 960, 560, mode === "ar", performance.now() / 1000);
+    const bx = 260, bot = 462;
+    const col: [number, number, number] = pH < 4 ? [255, 111, 97] : pH < 5.6 ? [242, 168, 59] : [86, 184, 255];
+    chem.beaker(ctx, bx, bot, 84, 300);
+    chem.beakerLiquid(ctx, bx, bot, 84, 300, 0.62, col, 0.75);
+    chem.glow(ctx, bx, bot - 90, 120, col, 0.25);
+    chem.swirl(ctx, bx, bot - 90, 50, performance.now() / 1000, "255,255,255");
+    ctx.font = `700 42px ${MONO}`; ctx.fillStyle = `rgb(${col[0]},${col[1]},${col[2]})`; ctx.textAlign = "center";
+    ctx.fillText(fmt(pH, 2), bx, 320);
     ctx.font = `12px ${FA}`; ctx.fillStyle = "#8fbcb8";
-    ctx.fillText("pH بافر استات", bx, 360);
+    ctx.fillText("pH بافر استات", bx, 352);
     ctx.textAlign = "left";
     const ratio = S.acid > 0 ? S.salt / S.acid : 99;
     hud(ctx, 540, 130, 370, 260, mode === "ar");

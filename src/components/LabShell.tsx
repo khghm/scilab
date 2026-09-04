@@ -151,7 +151,12 @@ export function LabShell(p: Props) {
       <div className="grid lg:grid-cols-[1fr_330px] gap-4 items-start">
         {/* stage column */}
         <div className="min-w-0">
-          <div ref={stageRef} className="relative rounded-xl border border-edge bg-deep overflow-hidden">
+          <div
+            ref={stageRef}
+            className="relative rounded-xl border bg-deep overflow-hidden"
+            style={{ borderColor: `${sub.color}33`, boxShadow: `0 0 0 1px ${sub.color}14, 0 18px 50px -18px ${sub.color}30` }}
+          >
+            <div className="absolute top-0 left-0 right-0 h-[3px] z-20 pointer-events-none" style={{ background: `linear-gradient(90deg, transparent, ${sub.color}, transparent)`, opacity: 0.7 }} />
             {p.mode === "ar" && (
               <img
                 src="https://ipfs.io/ipfs/QmQzJ6C6Y6hE3d6m7vW8xXyYzZ1aB2cD3eF4gH5iJ6kL7m/arlab.jpg"

@@ -3,7 +3,8 @@ import { LiveChart } from "../components/Chart";
 import { LabShell, type FeedItem, type LabMode } from "../components/LabShell";
 import { Slider } from "../components/ui";
 import { fmt, useForce, useRaf } from "../lib/utils";
-import { bg, hud, FA, MONO, rr, sr } from "./draw";
+import { chemScene, hud, FA, MONO, rr, sr } from "./draw";
+import * as chem from "./chem";
 import type { Experiment } from "../data/catalog";
 
 type Props = { exp: Experiment; onBack: () => void; initMode?: LabMode };
@@ -36,13 +37,23 @@ export function LeChatelierLab({ exp, onBack, initMode }: Props) {
   useRaf(() => {
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
-    bg(ctx, 960, 560, mode === "ar");
-    const cx = 300, bot = 460, gasH = 240 / S.P;
-    ctx.strokeStyle = "rgba(233,246,243,0.55)"; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(cx - 80, bot - 300); ctx.lineTo(cx - 80, bot); ctx.lineTo(cx + 80, bot); ctx.lineTo(cx + 80, bot - 300); ctx.stroke();
-    ctx.fillStyle = `rgba(180,110,40,${(0.08 + alpha * 0.6).toFixed(2)})`;
-    ctx.fillRect(cx - 76, bot - gasH, 152, gasH - 4);
-    ctx.fillStyle = "#8fbcb8"; ctx.fillRect(cx - 90, bot - gasH - 14, 180, 14);
+    chemScene(ctx, 960, 560, mode === "ar", performance.now() / 1000);
+    const cx = 300, bot = 462, gasH = 240 / S.P;
+    // sealed glass vessel
+    ctx.fillStyle = "rgba(180,225,235,0.05)";
+    ctx.strokeStyle = "rgba(214,240,244,0.6)"; ctx.lineWidth = 2.6;
+    ctx.beginPath(); ctx.roundRect(cx - 80, bot - 300, 160, 300, 10); ctx.fill(); ctx.stroke();
+    chem.shine(ctx, cx - 70, bot - 290, bot - 12, 14, 8);
+    // NO2 brown gas with glow
+    chem.glow(ctx, cx, bot - gasH / 2, 130, [180, 110, 40], 0.10 + alpha * 0.25);
+    const gg = ctx.createLinearGradient(0, bot - gasH, 0, bot);
+    gg.addColorStop(0, `rgba(200,130,50,${(0.10 + alpha * 0.35).toFixed(2)})`);
+    gg.addColorStop(1, `rgba(180,110,40,${(0.12 + alpha * 0.6).toFixed(2)})`);
+    ctx.fillStyle = gg;
+    ctx.beginPath(); ctx.roundRect(cx - 76, bot - gasH, 152, gasH - 4, 6); ctx.fill();
+    // stopper
+    ctx.fillStyle = "#3a7480";
+    ctx.beginPath(); ctx.roundRect(cx - 90, bot - gasH - 16, 180, 16, 5); ctx.fill();
     const nB = Math.round(alpha * 26);
     for (let i = 0; i < 26; i++) {
       const isNO2 = i < nB;
@@ -137,28 +148,45 @@ export function ElodeaLab({ exp, onBack, initMode }: Props) {
     }
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
-    bg(ctx, 960, 560, mode === "ar");
-    ctx.fillStyle = "rgba(86,184,255,0.10)";
+    chemScene(ctx, 960, 560, mode === "ar", performance.now() / 1000);
+    const tt = performance.now() / 1000;
+    // aquarium with water gradient
+    const wg = ctx.createLinearGradient(0, 110, 0, 470);
+    wg.addColorStop(0, "rgba(86,184,255,0.16)");
+    wg.addColorStop(1, "rgba(40,120,190,0.22)");
+    ctx.fillStyle = wg;
     ctx.fillRect(140, 110, 360, 360);
-    ctx.strokeStyle = "rgba(233,246,243,0.5)"; ctx.lineWidth = 3;
+    ctx.strokeStyle = "rgba(214,240,244,0.5)"; ctx.lineWidth = 3;
     ctx.strokeRect(140, 110, 360, 360);
-    ctx.strokeStyle = "#a5d95c"; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(320, 440); ctx.quadraticCurveTo(300, 330, 330, 240); ctx.stroke();
-    for (let i = 0; i < 6; i++) {
-      const ly = 260 + i * 30, side = i % 2 ? 1 : -1;
-      ctx.fillStyle = "#7cb342";
-      ctx.beginPath(); ctx.ellipse(325 + side * 26, ly, 22, 8, side * 0.5, 0, Math.PI * 2); ctx.fill();
+    chem.shine(ctx, 152, 120, 460, 14, 10);
+    // gravel
+    ctx.fillStyle = "rgba(120,100,80,0.5)";
+    for (let i = 0; i < 14; i++) ctx.beginPath(), ctx.arc(160 + i * 25, 462 + (i % 3) * 3, 7, 0, Math.PI * 2), ctx.fill();
+    // elodea stem with swaying leaves
+    ctx.strokeStyle = "#8bc34a"; ctx.lineWidth = 4; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(320, 455); ctx.quadraticCurveTo(300 + Math.sin(tt) * 4, 330, 330, 235); ctx.stroke();
+    for (let i = 0; i < 7; i++) {
+      const ly = 250 + i * 28, side = i % 2 ? 1 : -1;
+      const sway = Math.sin(tt * 1.5 + i) * 0.15;
+      ctx.fillStyle = i % 2 ? "#7cb342" : "#9ccc65";
+      ctx.beginPath(); ctx.ellipse(325 + side * 27, ly, 23, 8, side * 0.5 + sway, 0, Math.PI * 2); ctx.fill();
     }
+    // glowing O2 bubbles
     for (const b of S.bubbles) {
-      ctx.fillStyle = "rgba(255,255,255,0.65)";
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
+      chem.glow(ctx, b.x, b.y, b.r * 3, [160, 230, 255], 0.3);
+      ctx.strokeStyle = "rgba(220,245,255,0.8)"; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = "rgba(255,255,255,0.25)"; ctx.fill();
     }
+    // lamp with rays + glow
     if (S.light > 5) {
-      ctx.strokeStyle = `rgba(255,210,60,${(S.light / 100) * 0.8})`; ctx.lineWidth = 2.5;
-      for (let i = 0; i < 5; i++) {
-        const lx = 60 + i * 14;
-        ctx.beginPath(); ctx.moveTo(lx, 60); ctx.lineTo(lx + 90, 220); ctx.stroke();
-      }
+      chem.glow(ctx, 70, 52, 60, [255, 210, 60], 0.35);
+      const rayA = (S.light / 100) * 0.7;
+      const rg2 = ctx.createLinearGradient(60, 60, 200, 260);
+      rg2.addColorStop(0, `rgba(255,210,60,${rayA})`);
+      rg2.addColorStop(1, "rgba(255,210,60,0)");
+      ctx.fillStyle = rg2;
+      ctx.beginPath(); ctx.moveTo(56, 60); ctx.lineTo(96, 60); ctx.lineTo(300, 300); ctx.lineTo(150, 300); ctx.closePath(); ctx.fill();
       ctx.fillStyle = "#ffd23c";
       ctx.beginPath(); ctx.arc(70, 52, 16, 0, Math.PI * 2); ctx.fill();
     }

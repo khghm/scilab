@@ -3,7 +3,8 @@ import { LiveChart } from "../components/Chart";
 import { LabShell, type FeedItem, type LabMode } from "../components/LabShell";
 import { Slider } from "../components/ui";
 import { fmt, useForce, useRaf } from "../lib/utils";
-import { bg, hud, FA, MONO, rr, sr } from "./draw";
+import { chemScene, hud, FA, MONO, rr, sr } from "./draw";
+import * as chem from "./chem";
 import type { Experiment } from "../data/catalog";
 
 type Props = { exp: Experiment; onBack: () => void; initMode?: LabMode };
@@ -26,27 +27,25 @@ export function RedoxLab({ exp, onBack, initMode }: Props) {
     if (!S.overshoot && S.v > VEQ + 2.5) { S.overshoot = true; pushFeed("warn", "از نقطه پایان عبور کردید — رنگ پررنگ شد و خطای تیتراسیون بالا رفت؛ آرام‌تر بریزید."); }
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
-    bg(ctx, 960, 560, mode === "ar");
-    const bx = 300, by = 470;
-    ctx.strokeStyle = "rgba(233,246,243,0.55)"; ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(bx - 78, 180); ctx.lineTo(bx - 70, by); ctx.quadraticCurveTo(bx, by + 18, bx + 70, by); ctx.lineTo(bx + 78, 180);
-    ctx.stroke();
+    chemScene(ctx, 960, 560, mode === "ar", performance.now() / 1000);
+    const bx = 300, by = 462;
+    // burette with purple KMnO4
+    if (mode !== "ar") {
+      ctx.strokeStyle = "rgba(143,188,184,0.4)"; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(bx - 70, 40); ctx.lineTo(bx + 70, 40); ctx.stroke();
+    }
+    chem.burette(ctx, bx, 52, 280, Math.max(0, 1 - S.v / 50), [122, 47, 181]);
+    chem.labelChip(ctx, bx + 40, 70, "KMnO₄ 0.02 M", "#b388ff");
+    // erlenmeyer with reaction color
     const tint = !S.acidified && S.v > 0.3 ? 0.4 : Math.min(1, excess / 1.2);
-    const col = !S.acidified && S.v > 0.3 ? "rgba(140,90,40,0.55)" : `rgba(${Math.round(230 + tint * 20)},${Math.round(215 - tint * 130)},${Math.round(225 - tint * 60)},${(0.25 + tint * 0.45).toFixed(2)})`;
-    ctx.fillStyle = col;
-    ctx.beginPath();
-    ctx.moveTo(bx - 74, 230); ctx.lineTo(bx - 68, by - 4); ctx.quadraticCurveTo(bx, by + 12, bx + 68, by - 4); ctx.lineTo(bx + 74, 230);
-    ctx.closePath(); ctx.fill();
-    ctx.fillStyle = "#7a2fb5";
-    ctx.fillRect(bx - 10, 60, 20, 90);
-    ctx.fillStyle = "#2a7a80"; ctx.fillRect(bx - 26, 100, 52, 14);
-    ctx.strokeStyle = "rgba(233,246,243,0.4)";
-    for (let i = 0; i <= 8; i++) { ctx.beginPath(); ctx.moveTo(bx - 10, 62 + i * 11); ctx.lineTo(bx - 2, 62 + i * 11); ctx.stroke(); }
-    ctx.fillStyle = "#b388ff"; ctx.font = `12px ${FA}`;
-    ctx.fillText("KMnO₄ ۰٫۰۲M", bx + 34, 90);
-    ctx.fillStyle = "#e9f6f3";
-    ctx.fillText("ارلن: Fe²⁺ + H₂SO₄", bx - 180, 520);
+    const liqCol: [number, number, number] = !S.acidified && S.v > 0.3
+      ? [140, 90, 40]
+      : [Math.round(235 + tint * 20), Math.round(150 - tint * 60), Math.round(200 - tint * 30)];
+    chem.erlenmeyer(ctx, bx, by, 22, 88, -140, -55);
+    chem.erlenLiquid(ctx, bx, by, 0.6, 88, liqCol, !S.acidified && S.v > 0.3 ? 0.6 : 0.3 + tint * 0.5);
+    if (excess > 0.05 && S.acidified) chem.glow(ctx, bx, by - 45, 80, [235, 120, 190], 0.25);
+    if (S.dropping) chem.swirl(ctx, bx, by - 40, 44, performance.now() / 1000, "255,255,255");
+    chem.caption(ctx, bx - 110, by + 40, "ارلن: Fe²⁺ + H₂SO₄", "#c9d8d6", 12);
     hud(ctx, 560, 160, 340, 150, mode === "ar");
     ctx.font = `13px ${MONO}`;
     ctx.fillStyle = "#e9f6f3"; ctx.fillText(`V = ${fmt(S.v, 2)} mL`, 580, 190);
@@ -136,17 +135,17 @@ export function ArrheniusLab({ exp, onBack, initMode }: Props) {
     S.bubT += Math.min(dt, 50) / 1000;
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
-    bg(ctx, 960, 560, mode === "ar");
-    const tx = 260, ty = 470;
-    ctx.strokeStyle = "rgba(233,246,243,0.55)"; ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.moveTo(tx - 52, ty - 290); ctx.lineTo(tx - 52, ty - 30); ctx.arc(tx, ty - 30, 52, Math.PI, 0, true); ctx.lineTo(tx + 52, ty - 290); ctx.stroke();
-    ctx.fillStyle = "rgba(150,200,235,0.18)";
-    ctx.beginPath(); ctx.moveTo(tx - 49, ty - 230); ctx.lineTo(tx - 49, ty - 30); ctx.arc(tx, ty - 30, 49, Math.PI, 0, true); ctx.lineTo(tx + 49, ty - 230); ctx.closePath(); ctx.fill();
+    chemScene(ctx, 960, 560, mode === "ar", performance.now() / 1000);
+    const tx = 260, ty = 462;
+    chem.testTube(ctx, tx, ty - 300, 104, 280, 0.75, [150, 200, 235]);
+    chem.glow(ctx, tx, ty - 120, 90, [150, 200, 235], 0.12);
     const bubRate = Math.min(1, Math.log10(1 + v0 * 400) / 3);
     for (let i = 0; i < 16; i++) {
       const cyc = (S.bubT * (40 + (i % 4) * 25) * 0.02 + i * 0.61) % 1;
+      const bx2 = tx - 36 + ((i * 29) % 72), by2 = ty - 50 - cyc * 170;
+      chem.glow(ctx, bx2, by2, 8, [200, 235, 255], 0.35 * (1 - cyc) * (0.3 + bubRate));
       ctx.fillStyle = `rgba(255,255,255,${((1 - cyc) * 0.75 * (0.25 + bubRate)).toFixed(2)})`;
-      ctx.beginPath(); ctx.arc(tx - 36 + ((i * 29) % 72), ty - 40 - cyc * 180, 2 + (i % 3) * 1.6, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(bx2, by2, 2 + (i % 3) * 1.6, 0, Math.PI * 2); ctx.fill();
     }
     ctx.fillStyle = "#e9f6f3"; ctx.font = `13px ${MONO}`;
     ctx.fillText(`T = ${fmt(S.T, 0)}°C`, tx + 110, ty - 200);
@@ -261,20 +260,34 @@ export function FlameLab({ exp, onBack, initMode }: Props) {
   useRaf(() => {
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
-    bg(ctx, 960, 560, mode === "ar");
-    const bx = 300, by = 470, t = performance.now() / 1000;
+    chemScene(ctx, 960, 560, mode === "ar", performance.now() / 1000);
+    const bx = 300, by = 462, t = performance.now() / 1000;
     const flick = 0.85 + 0.15 * Math.sin(t * 21) * Math.sin(t * 13.7);
-    ctx.fillStyle = "#2a7a80";
-    ctx.fillRect(bx - 16, by - 150, 32, 150); ctx.fillRect(bx - 70, by, 140, 18);
+    chem.burner(ctx, bx, by, t, false);
     if (S.burner) {
       const fh = 150 * flick, [r, g2, b2] = flameOn ? comp : [70, 110, 255];
-      const oc = ctx.createRadialGradient(bx, by - 170 - fh / 2, 10, bx, by - 170 - fh / 2, fh);
-      oc.addColorStop(0, `rgba(${Math.round(r)},${Math.round(g2)},${Math.round(b2)},0.85)`);
+      chem.glow(ctx, bx, by - 120 - fh / 2, fh, [r, g2, b2].map((v) => Math.round(v)) as [number, number, number], 0.35);
+      const oc = ctx.createRadialGradient(bx, by - 120 - fh / 2, 8, bx, by - 120 - fh / 2, fh);
+      oc.addColorStop(0, `rgba(${Math.round(r)},${Math.round(g2)},${Math.round(b2)},0.9)`);
+      oc.addColorStop(0.55, `rgba(${Math.round(r)},${Math.round(g2)},${Math.round(b2)},0.3)`);
       oc.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = oc;
-      ctx.beginPath(); ctx.ellipse(bx, by - 170 - fh / 2, 42 * flick, fh * 0.62, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "rgba(90,140,255,0.5)";
-      ctx.beginPath(); ctx.moveTo(bx - 14, by - 168); ctx.quadraticCurveTo(bx, by - 168 - 55 * flick, bx + 14, by - 168); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(bx, by - 120 - fh / 2, 40 * flick, fh * 0.62, 0, 0, Math.PI * 2); ctx.fill();
+      const ig = ctx.createLinearGradient(bx, by - 118, bx, by - 118 - 56);
+      ig.addColorStop(0, "rgba(120,170,255,0.85)");
+      ig.addColorStop(1, "rgba(160,200,255,0.1)");
+      ctx.fillStyle = ig;
+      ctx.beginPath(); ctx.moveTo(bx - 13, by - 116); ctx.quadraticCurveTo(bx, by - 116 - 54 * flick, bx + 13, by - 116); ctx.closePath(); ctx.fill();
+    }
+    // wire loop with glowing sample
+    ctx.strokeStyle = "rgba(214,240,244,0.7)"; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(bx + 150, by - 240); ctx.lineTo(bx + 26, by - 160); ctx.stroke();
+    ctx.beginPath(); ctx.arc(bx + 150, by - 248, 11, 0, Math.PI * 2); ctx.stroke();
+    if (flameOn) {
+      const [r, g2, b2] = comp.map((v) => Math.round(v)) as [number, number, number];
+      chem.glow(ctx, bx + 150, by - 248, 30, [r, g2, b2], 0.6);
+      ctx.fillStyle = `rgb(${r},${g2},${b2})`;
+      ctx.beginPath(); ctx.arc(bx + 150, by - 248, 7, 0, Math.PI * 2); ctx.fill();
     }
     const px = 540, py = 120, pw = 360, ph = 220;
     ctx.fillStyle = "#04191d"; ctx.strokeStyle = "rgba(42,122,128,0.9)";

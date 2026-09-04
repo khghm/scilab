@@ -4,6 +4,7 @@ import { LabShell, type FeedItem, type LabMode } from "../components/LabShell";
 import { Slider } from "../components/ui";
 import { fmt, useForce, useRaf } from "../lib/utils";
 import type { Experiment } from "../data/catalog";
+import * as chem from "./chem";
 
 function sr(name: string, color: string, arr: { x: number; y: number }[]): SeriesDef {
   return { name, color, ["data"]: arr };
@@ -93,71 +94,63 @@ export function TitrationLab({ exp, onBack, initMode }: { exp: Experiment; onBac
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     const W = 960, H = 560;
-    ctx.clearRect(0, 0, W, H);
-    if (!ar) {
-      const g = ctx.createLinearGradient(0, 0, 0, H);
-      g.addColorStop(0, "#082229"); g.addColorStop(1, "#0b3038");
-      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    }
-    // burette
+    const t = performance.now() / 1000;
+    chem.chemBg(ctx, W, H, ar, t);
+    if (!ar) chem.bench(ctx, W, H, 470);
+
+    // burette on stand
     const bx = 300;
-    ctx.strokeStyle = "rgba(233,246,243,0.55)";
-    ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.roundRect(bx - 20, 40, 40, 330, 8); ctx.stroke();
-    const fill = 1 - S.v / 50;
-    ctx.fillStyle = "rgba(86,184,255,0.35)";
-    ctx.fillRect(bx - 17, 44 + 322 * (1 - fill), 34, 322 * fill);
-    for (let ml = 0; ml <= 50; ml += 10) {
-      const yy = 44 + (ml / 50) * 322;
-      ctx.strokeStyle = "rgba(143,188,184,0.5)";
-      ctx.beginPath(); ctx.moveTo(bx - 20, yy); ctx.lineTo(bx - 30, yy); ctx.stroke();
-      ctx.fillStyle = "#8fbcb8";
-      ctx.font = '10px "IBM Plex Mono", monospace';
-      ctx.fillText(`${ml}`, bx - 52, yy + 3);
+    if (!ar) {
+      chem.glow(ctx, bx, 60, 90, [86, 184, 255], 0.10);
+      ctx.strokeStyle = "rgba(143,188,184,0.4)"; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(bx - 70, 34); ctx.lineTo(bx + 70, 34); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(bx - 70, 34); ctx.lineTo(bx - 70, 470); ctx.stroke();
     }
-    // drops
-    if (S.auto || frame.current % 40 < 6) {
-      ctx.fillStyle = "rgba(86,184,255,0.8)";
-      const dy = 380 + ((performance.now() / 9) % 60);
-      ctx.beginPath(); ctx.arc(bx, dy, 3.5, 0, Math.PI * 2); ctx.fill();
+    const frac = Math.max(0, 1 - S.v / 50);
+    chem.burette(ctx, bx, 46, 320, frac, [86, 184, 255]);
+
+    // falling drops
+    if (S.auto || frame.current % 40 < 8) {
+      const dy = 396 + ((t * 120) % 52);
+      chem.glow(ctx, bx, dy, 10, [120, 200, 255], 0.5);
+      ctx.fillStyle = "rgba(120,200,255,0.9)";
+      ctx.beginPath(); ctx.ellipse(bx, dy, 3, 4.5, 0, 0, Math.PI * 2); ctx.fill();
     }
-    // flask
-    const fy = 450;
-    ctx.strokeStyle = "rgba(233,246,243,0.55)";
-    ctx.beginPath();
-    ctx.moveTo(bx - 26, 400); ctx.lineTo(bx - 26, 420);
-    ctx.bezierCurveTo(bx - 110, 450, bx - 110, fy + 40, bx - 60, fy + 60);
-    ctx.lineTo(bx + 60, fy + 60);
-    ctx.bezierCurveTo(bx + 110, fy + 40, bx + 110, 450, bx + 26, 420);
-    ctx.lineTo(bx + 26, 400);
-    ctx.stroke();
-    // solution color by pH + indicator
-    const col = S.indicator === "phenol"
-      ? pH < 8.2 ? "rgba(233,246,243,0.10)" : "rgba(255,111,160,0.55)"
+
+    // erlenmeyer with indicator color
+    const [lr, lg, lb] = S.indicator === "phenol"
+      ? (pH < 8.2 ? [210, 235, 240] : [255, 111, 160])
       : S.indicator === "methyl"
-        ? pH < 3.1 ? "rgba(255,90,70,0.5)" : pH < 4.4 ? "rgba(255,160,90,0.5)" : "rgba(255,220,120,0.35)"
-        : pH < 6 ? "rgba(255,90,70,0.45)" : pH < 7.6 ? "rgba(160,220,120,0.4)" : "rgba(80,120,220,0.5)";
-    ctx.fillStyle = col;
-    ctx.beginPath();
-    ctx.moveTo(bx - 92, 470);
-    ctx.bezierCurveTo(bx - 100, fy + 36, bx - 100, fy + 40, bx - 58, fy + 56);
-    ctx.lineTo(bx + 58, fy + 56);
-    ctx.bezierCurveTo(bx + 100, fy + 40, bx + 100, fy + 36, bx + 92, 470);
-    ctx.closePath(); ctx.fill();
-    // pH meter
-    ctx.fillStyle = ar ? "rgba(4,25,29,0.6)" : "rgba(4,25,29,0.8)";
-    ctx.strokeStyle = "rgba(23,80,89,0.9)";
-    ctx.beginPath(); ctx.roundRect(560, 120, 330, 130, 10); ctx.fill(); ctx.stroke();
-    ctx.font = '600 42px "IBM Plex Mono", monospace';
-    ctx.fillStyle = pH < 4 ? "#ff6f61" : pH < 8 ? "#a5d95c" : "#56b8ff";
-    ctx.fillText(fmt(pH, 2), 580, 178);
-    ctx.font = '12px "IBM Plex Mono", monospace';
-    ctx.fillStyle = "#8fbcb8";
-    ctx.fillText(`V(NaOH) = ${fmt(S.v, 2)} mL`, 580, 204);
-    ctx.fillText(`Ve = ${fmt(Ve, 2)} mL`, 580, 224);
+        ? (pH < 3.1 ? [255, 90, 70] : pH < 4.4 ? [255, 160, 90] : [255, 220, 120])
+        : (pH < 6 ? [255, 90, 70] : pH < 7.6 ? [160, 220, 120] : [80, 120, 220]);
+    const liqAlpha = S.indicator === "phenol" && pH < 8.2 ? 0.14 : 0.8;
+    chem.erlenmeyer(ctx, bx, 462, 24, 92, -148, -58);
+    chem.erlenLiquid(ctx, bx, 462, 0.62, 92, [lr, lg, lb], liqAlpha);
+    if (S.auto) chem.swirl(ctx, bx, 430, 46, t, "255,255,255");
+    if (pH >= 8.2 && S.indicator === "phenol") chem.glow(ctx, bx, 432, 70, [255, 111, 160], 0.22);
+
+    // stir bar
+    ctx.save();
+    ctx.translate(bx, 452); ctx.rotate(t * (S.auto ? 6 : 0));
     ctx.fillStyle = "#e9f6f3";
-    ctx.font = '12px Vazirmatn, sans-serif';
-    ctx.fillText(S.strong ? "اسید قوی HCl" : "اسید ضعیف CH₃COOH", 560, 100);
+    ctx.beginPath(); ctx.roundRect(-16, -3.5, 32, 7, 3.5); ctx.fill();
+    ctx.restore();
+
+    // pH meter HUD
+    chem.chemHud(ctx, 560, 96, 340, 168, pH < 4 ? "#ff6f61" : pH < 8 ? "#a5d95c" : "#56b8ff");
+    chem.caption(ctx, 582, 124, S.strong ? "اسید قوی — HCl" : "اسید ضعیف — CH₃COOH", "#e9f6f3", 13);
+    chem.readout(ctx, 582, 182, fmt(pH, 2), pH < 4 ? "#ff6f61" : pH < 8 ? "#a5d95c" : "#56b8ff", 44);
+    ctx.font = `12px ${chem.MONO}`; ctx.fillStyle = "#8fbcb8";
+    ctx.fillText(`V(NaOH) = ${fmt(S.v, 2)} mL`, 582, 210);
+    ctx.fillText(`Ve = ${fmt(Ve, 2)} mL`, 582, 230);
+    // pH color bar
+    const barY = 244;
+    for (let i = 0; i < 14; i++) {
+      ctx.fillStyle = i === Math.round(pH) ? "#e9f6f3" : "rgba(143,188,184,0.25)";
+      ctx.fillRect(582 + i * 21, barY, 17, 8);
+    }
+    chem.labelChip(ctx, bx - 60, 500, "NaOH 0.1 M", "#56b8ff");
+    chem.labelChip(ctx, 620, 300, S.indicator === "phenol" ? "فنل‌فتالئین" : S.indicator === "methyl" ? "متیل‌اورانژ" : "برموتیمول", "#f2a83b");
   };
 
   const curve = Array.from({ length: 101 }, (_, i) => {
@@ -320,51 +313,73 @@ export function EnzymeLab({ exp, onBack, initMode }: { exp: Experiment; onBack: 
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     const W = 960, H = 560;
-    ctx.clearRect(0, 0, W, H);
-    if (!ar) {
-      const g = ctx.createLinearGradient(0, 0, 0, H);
-      g.addColorStop(0, "#082229"); g.addColorStop(1, "#0b3038");
-      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    }
+    const t = performance.now() / 1000;
+    chem.chemBg(ctx, W, H, ar, t);
+    if (!ar) chem.bench(ctx, W, H, 452);
+
+    // reaction cuvette (glass) with tinted solution
     const tint = Math.min(1, S.P / Math.max(S.S0, 0.01));
-    ctx.fillStyle = ar ? "rgba(165,217,92,0.06)" : `rgba(165,217,92,${(0.05 + tint * 0.16).toFixed(2)})`;
-    ctx.strokeStyle = "rgba(233,246,243,0.5)";
+    ctx.fillStyle = `rgba(165,217,92,${(0.05 + tint * 0.16).toFixed(2)})`;
+    ctx.strokeStyle = "rgba(214,240,244,0.55)";
     ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.roundRect(280, 90, 560, 330, 16); ctx.fill(); ctx.stroke();
-    // pseudo-particles
+    ctx.beginPath(); ctx.roundRect(290, 96, 540, 320, 14); ctx.fill(); ctx.stroke();
+    chem.shine(ctx, 310, 110, 400, 18, 14);
+    if (S.running) chem.bubbles(ctx, 320, 400, 480, 260, 14, t, "165,217,92", 0.8);
+
+    // substrate / product particles
     const nS = Math.round(26 * (sc() / Math.max(S.S0, 0.01)));
     const nP = 26 - nS;
     for (let i = 0; i < nS; i++) {
-      const x = 310 + ((i * 137) % 500), y = 120 + ((i * 89) % 270);
+      const x = 320 + ((i * 137) % 480), y = 130 + ((i * 89) % 250);
+      chem.glow(ctx, x + Math.sin(t * 2.2 + i) * 9, y, 12, [242, 168, 59], 0.35);
       ctx.fillStyle = "#f2a83b";
-      ctx.beginPath(); ctx.arc(x + Math.sin(performance.now() / 400 + i) * 8, y, 6.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + Math.sin(t * 2.2 + i) * 9, y, 6, 0, Math.PI * 2); ctx.fill();
     }
     for (let i = 0; i < nP; i++) {
-      const x = 320 + ((i * 173) % 490), y = 130 + ((i * 101) % 260);
+      const x = 330 + ((i * 173) % 470), y = 140 + ((i * 101) % 240);
+      chem.glow(ctx, x + Math.cos(t * 2 + i) * 9, y, 11, [165, 217, 92], 0.35);
       ctx.fillStyle = "#a5d95c";
-      ctx.beginPath(); ctx.arc(x + Math.cos(performance.now() / 380 + i) * 8, y, 5.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + Math.cos(t * 2 + i) * 9, y, 5.2, 0, Math.PI * 2); ctx.fill();
     }
+    // enzyme (with active site)
     for (let i = 0; i < 4; i++) {
-      const x = 380 + i * 110, y = 240 + Math.sin(performance.now() / 700 + i * 2) * 30;
-      ctx.fillStyle = "rgba(53,211,194,0.9)";
+      const x = 390 + i * 105, y = 250 + Math.sin(t * 1.4 + i * 2) * 34;
+      chem.glow(ctx, x, y, 30, [53, 211, 194], 0.4);
+      ctx.fillStyle = "rgba(53,211,194,0.95)";
       ctx.beginPath(); ctx.arc(x, y, 15, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = "#04191d";
       ctx.beginPath(); ctx.arc(x + 6, y - 4, 4.5, 0, Math.PI * 2); ctx.fill();
     }
+
+    // thermometer
+    const thX = 180, thTop = 120, thH = 300;
+    chem.chemHud(ctx, thX - 40, thTop - 30, 92, thH + 74, "#ff6f61");
+    ctx.fillStyle = "#0a2b33";
+    ctx.beginPath(); ctx.roundRect(thX - 9, thTop, 18, thH, 9); ctx.fill();
+    const tg = ctx.createLinearGradient(0, thTop, 0, thTop + thH);
+    tg.addColorStop(0, "#ff6f61"); tg.addColorStop(1, "#56b8ff");
+    ctx.fillStyle = tg;
+    const tFrac = Math.max(0, Math.min(1, (70 - S.T) / 60));
+    ctx.fillRect(thX - 5, thTop + 8 + (thH - 16) * tFrac, 10, (thH - 16) * (1 - tFrac));
+    ctx.fillStyle = "#e9f6f3";
+    ctx.beginPath(); ctx.arc(thX, thTop + thH + 14, 12, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#ff6f61";
+    ctx.beginPath(); ctx.arc(thX, thTop + thH + 14, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.font = `700 15px ${chem.MONO}`; ctx.fillStyle = "#e9f6f3"; ctx.textAlign = "center";
+    ctx.fillText(`${S.T.toFixed(0)}°`, thX + 2, thTop + thH + 42);
+    ctx.textAlign = "left";
+
     // readout
-    ctx.fillStyle = ar ? "rgba(4,25,29,0.6)" : "rgba(4,25,29,0.78)";
-    ctx.strokeStyle = "rgba(23,80,89,0.9)";
-    ctx.beginPath(); ctx.roundRect(220, 448, 520, 76, 10); ctx.fill(); ctx.stroke();
-    ctx.font = '600 20px "IBM Plex Mono", monospace';
-    ctx.fillStyle = "#a5d95c";
-    ctx.fillText(`[P] = ${fmt(S.P, 2)} mM`, 242, 480);
-    ctx.fillStyle = "#f2a83b";
-    ctx.fillText(`v = ${fmt(vOf(sc()), 3)} mM/min`, 242, 506);
+    chem.chemHud(ctx, 250, 440, 560, 84, "#a5d95c");
+    ctx.font = `600 19px ${chem.MONO}`;
+    ctx.fillStyle = "#a5d95c"; ctx.fillText(`[P] = ${fmt(S.P, 2)} mM`, 274, 470);
+    ctx.fillStyle = "#f2a83b"; ctx.fillText(`v = ${fmt(vOf(sc()), 3)}`, 274, 500);
     ctx.fillStyle = S.activity > 0.5 ? "#35d3c2" : "#ff6f61";
-    ctx.fillText(`activity = ${fmt(S.activity * 100, 0)}%`, 560, 480);
-    ctx.fillStyle = "#8fbcb8";
-    ctx.font = '12px "IBM Plex Mono", monospace';
-    ctx.fillText(`[S] = ${fmt(sc(), 2)} mM`, 560, 506);
+    ctx.fillText(`act ${fmt(S.activity * 100, 0)}%`, 560, 470);
+    ctx.fillStyle = "#8fbcb8"; ctx.font = `12px ${chem.MONO}`;
+    ctx.fillText(`[S] = ${fmt(sc(), 2)} mM`, 560, 500);
+    ctx.fillText(`mM/min`, 380, 500);
+    chem.labelChip(ctx, 300, 60, "E + S ⇌ ES → E + P", "#35d3c2");
   };
 
   const mmCurve = Array.from({ length: 41 }, (_, i) => {
