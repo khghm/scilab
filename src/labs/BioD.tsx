@@ -3,7 +3,7 @@ import { LiveChart } from "../components/Chart";
 import { LabShell, type FeedItem, type LabMode } from "../components/LabShell";
 import { Slider } from "../components/ui";
 import { fmt, useForce, useRaf } from "../lib/utils";
-import { bg, hud, FA, MONO, sr } from "./draw";
+import { bioScene as bg, glow, hex2rgb, hud, FA, MONO, sr } from "./draw";
 import type { Experiment } from "../data/catalog";
 
 type Props = { exp: Experiment; onBack: () => void; initMode?: LabMode };
@@ -26,15 +26,26 @@ export function PedigreeLab({ exp, onBack, initMode }: Props) {
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     bg(ctx, 960, 560, mode === "ar");
+    const arP = mode === "ar";
+    // pedigree panel
+    ctx.fillStyle = "rgba(6,26,22,0.45)";
+    ctx.strokeStyle = "rgba(46,120,96,0.45)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect(280, 84, 420, 420, 14); ctx.fill(); ctx.stroke();
     const shape = (x: number, y: number, sex: "m" | "f", aff: boolean) => {
-      ctx.fillStyle = aff ? "#ff6f61" : "#0b3038";
-      ctx.strokeStyle = aff ? "#ff6f61" : "#8fbcb8";
+      if (aff && !arP) glow(ctx, x, y, 44, [255, 111, 97], 0.4);
+      const g = ctx.createRadialGradient(x - 6, y - 6, 3, x, y, 22);
+      if (aff) { g.addColorStop(0, "#ff9a8f"); g.addColorStop(1, "#c94a3e"); }
+      else { g.addColorStop(0, "#12434d"); g.addColorStop(1, "#082b33"); }
+      ctx.fillStyle = g;
+      ctx.strokeStyle = aff ? "#ff8a7d" : "#8fbcb8";
       ctx.lineWidth = 2.5;
       ctx.beginPath();
       if (sex === "m") ctx.rect(x - 18, y - 18, 36, 36); else ctx.arc(x, y, 19, 0, Math.PI * 2);
       ctx.fill(); ctx.stroke();
+      if (!aff) { ctx.fillStyle = "rgba(233,246,243,0.12)"; ctx.beginPath(); ctx.arc(x - 6, y - 6, 6, 0, Math.PI * 2); ctx.fill(); }
     };
-    const line = (x1: number, y1: number, x2: number, y2: number) => { ctx.strokeStyle = "rgba(143,188,184,0.5)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); };
+    const line = (x1: number, y1: number, x2: number, y2: number) => { ctx.strokeStyle = "rgba(143,188,184,0.55)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); };
     if (S.kind === "rec") {
       shape(340, 120, "m", false); shape(420, 120, "f", false); line(358, 120, 401, 120);
       shape(560, 120, "m", false); shape(640, 120, "f", false); line(578, 120, 621, 120);
@@ -133,21 +144,45 @@ export function BloodTypeLab({ exp, onBack, initMode }: Props) {
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     bg(ctx, 960, 560, mode === "ar");
+    const arB = mode === "ar";
     const ox = 330, oy = 150, cs = 150;
-    ctx.strokeStyle = "rgba(143,188,184,0.5)"; ctx.lineWidth = 2;
-    for (let i = 0; i <= 2; i++) {
-      ctx.beginPath(); ctx.moveTo(ox + i * cs, oy); ctx.lineTo(ox + i * cs, oy + 2 * cs); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(ox, oy + i * cs); ctx.lineTo(ox + 2 * cs, oy + i * cs); ctx.stroke();
-    }
-    ctx.font = `700 22px ${MONO}`; ctx.textAlign = "center";
-    ctx.fillStyle = "#f2a83b"; ctx.fillText(S.p1a, ox + cs / 2, oy - 14); ctx.fillText(S.p1b, ox + (3 * cs) / 2, oy - 14);
-    ctx.fillStyle = "#56b8ff"; ctx.fillText(S.p2a, ox - 20, oy + cs / 2 + 8); ctx.fillText(S.p2b, ox - 20, oy + (3 * cs) / 2 + 8);
-    ctx.fillStyle = "#e9f6f3";
-    ctx.fillText(pheno(S.p1a, S.p2a), ox + cs / 2, oy + cs / 2 + 8);
-    ctx.fillText(pheno(S.p1b, S.p2a), ox + (3 * cs) / 2, oy + cs / 2 + 8);
-    ctx.fillText(pheno(S.p1a, S.p2b), ox + cs / 2, oy + (3 * cs) / 2 + 8);
-    ctx.fillText(pheno(S.p1b, S.p2b), ox + (3 * cs) / 2, oy + (3 * cs) / 2 + 8);
-    ctx.textAlign = "left";
+    const PH_COL: Record<string, string> = { A: "#ff6f61", B: "#56b8ff", AB: "#b388ff", O: "#8fbcb8" };
+    // gamete header chips
+    const chip = (x: number, y: number, txt: string, col: string) => {
+      if (!arB) glow(ctx, x, y, 30, hex2rgb(col), 0.3);
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.roundRect(x - 24, y - 20, 48, 34, 8); ctx.fill();
+      ctx.fillStyle = "#04191d"; ctx.font = `700 20px ${MONO}`; ctx.textAlign = "center";
+      ctx.fillText(txt, x, y + 4); ctx.textAlign = "left";
+    };
+    chip(ox + cs / 2, oy - 26, S.p1a, "#f2a83b");
+    chip(ox + (3 * cs) / 2, oy - 26, S.p1b, "#f2a83b");
+    chip(ox - 34, oy + cs / 2, S.p2a, "#56b8ff");
+    chip(ox - 34, oy + (3 * cs) / 2, S.p2b, "#56b8ff");
+    // result cells with phenotype glow + blood drop
+    const cellB = (r: number, c: number, ph: string) => {
+      const x = ox + c * cs, y = oy + r * cs, col = PH_COL[ph];
+      if (!arB) glow(ctx, x + cs / 2, y + cs / 2, 70, hex2rgb(col), 0.22);
+      const g = ctx.createLinearGradient(x, y, x, y + cs);
+      g.addColorStop(0, `${col}33`); g.addColorStop(1, `${col}12`);
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.roundRect(x + 5, y + 5, cs - 10, cs - 10, 10); ctx.fill();
+      ctx.strokeStyle = `${col}88`; ctx.lineWidth = 1.8; ctx.stroke();
+      // blood drop
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.moveTo(x + cs / 2, y + 34);
+      ctx.bezierCurveTo(x + cs / 2 + 12, y + 52, x + cs / 2 + 10, y + 66, x + cs / 2, y + 66);
+      ctx.bezierCurveTo(x + cs / 2 - 10, y + 66, x + cs / 2 - 12, y + 52, x + cs / 2, y + 34);
+      ctx.fill();
+      ctx.fillStyle = "#e9f6f3"; ctx.font = `700 22px ${MONO}`; ctx.textAlign = "center";
+      ctx.fillText(ph, x + cs / 2, y + cs - 26);
+      ctx.textAlign = "left";
+    };
+    cellB(0, 0, pheno(S.p1a, S.p2a));
+    cellB(0, 1, pheno(S.p1b, S.p2a));
+    cellB(1, 0, pheno(S.p1a, S.p2b));
+    cellB(1, 1, pheno(S.p1b, S.p2b));
     ctx.fillStyle = "#8fbcb8"; ctx.font = `12px ${FA}`;
     ctx.fillText("جدول پونت — فنوتیپ هر خانه", ox + 40, oy - 44);
     hud(ctx, 150, 460, 660, 70, mode === "ar");
@@ -235,25 +270,61 @@ export function YeastLab({ exp, onBack, initMode }: Props) {
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     bg(ctx, 960, 560, mode === "ar");
+    const arY = mode === "ar";
     const cx = 300, bot = 450;
-    ctx.strokeStyle = "rgba(233,246,243,0.55)"; ctx.lineWidth = 3;
+    if (!arY) glow(ctx, cx, 360, 170, [242, 168, 59], 0.14);
+    // broth gradient
+    const br = ctx.createLinearGradient(0, 250, 0, bot);
+    br.addColorStop(0, "rgba(242,190,100,0.32)");
+    br.addColorStop(1, "rgba(210,140,60,0.42)");
+    ctx.fillStyle = br;
+    ctx.beginPath(); ctx.moveTo(cx - 120, 250); ctx.bezierCurveTo(cx - 130, bot - 40, cx - 125, bot - 4, cx - 80, bot - 2); ctx.lineTo(cx + 80, bot - 2); ctx.bezierCurveTo(cx + 125, bot - 4, cx + 130, bot - 40, cx + 120, 250); ctx.closePath(); ctx.fill();
+    // foam layer
+    ctx.fillStyle = "rgba(255,240,210,0.55)";
+    for (let i = 0; i < 12; i++) {
+      const fxx = cx - 104 + i * 19 + Math.sin(performance.now() / 500 + i) * 2;
+      ctx.beginPath(); ctx.arc(fxx, 250 - (i % 3) * 3, 9 - (i % 3) * 2, 0, Math.PI * 2); ctx.fill();
+    }
+    // flask glass
+    ctx.fillStyle = "rgba(242,168,59,0.05)";
+    ctx.beginPath();
+    ctx.moveTo(cx - 24, 190);
+    ctx.bezierCurveTo(cx - 130, 230, cx - 130, bot - 40, cx - 80, bot); ctx.lineTo(cx + 80, bot);
+    ctx.bezierCurveTo(cx + 130, bot - 40, cx + 130, 230, cx + 24, 190); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = "rgba(214,240,244,0.6)"; ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(cx - 24, 120); ctx.lineTo(cx - 24, 190);
     ctx.bezierCurveTo(cx - 130, 230, cx - 130, bot - 40, cx - 80, bot); ctx.lineTo(cx + 80, bot);
     ctx.bezierCurveTo(cx + 130, bot - 40, cx + 130, 230, cx + 24, 190); ctx.lineTo(cx + 24, 120);
     ctx.stroke();
-    ctx.fillStyle = "rgba(242,168,59,0.25)";
-    ctx.beginPath(); ctx.moveTo(cx - 120, 250); ctx.bezierCurveTo(cx - 130, bot - 40, cx - 125, bot - 4, cx - 80, bot - 2); ctx.lineTo(cx + 80, bot - 2); ctx.bezierCurveTo(cx + 125, bot - 4, cx + 130, bot - 40, cx + 120, 250); ctx.closePath(); ctx.fill();
-    for (const b of S.bubbles) { ctx.fillStyle = "rgba(255,255,255,0.6)"; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill(); }
-    ctx.strokeStyle = "#2a7a80"; ctx.lineWidth = 8;
+    ctx.strokeStyle = "rgba(255,255,255,0.22)"; ctx.lineWidth = 3; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(cx - 100, 270); ctx.bezierCurveTo(cx - 112, 320, cx - 106, 370, cx - 78, 408); ctx.stroke();
+    // glowing CO2 bubbles
+    for (const b of S.bubbles) {
+      if (!arY) glow(ctx, b.x, b.y, b.r * 2.6, [255, 240, 210], 0.4);
+      ctx.strokeStyle = "rgba(255,250,235,0.85)"; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = "rgba(255,250,235,0.2)"; ctx.fill();
+    }
+    // delivery tube
+    ctx.strokeStyle = "#2a7a80"; ctx.lineWidth = 8; ctx.lineCap = "butt";
     ctx.beginPath(); ctx.moveTo(cx, 120); ctx.lineTo(cx, 80); ctx.lineTo(640, 80); ctx.lineTo(640, 200); ctx.stroke();
-    ctx.strokeStyle = "rgba(233,246,243,0.5)"; ctx.lineWidth = 3;
+    ctx.strokeStyle = "#3a8a94"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx, 120); ctx.lineTo(cx, 82); ctx.lineTo(638, 82); ctx.lineTo(638, 198); ctx.stroke();
+    // water trough + graduated cylinder
+    ctx.strokeStyle = "rgba(214,240,244,0.5)"; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(540, 200); ctx.lineTo(548, 440); ctx.lineTo(780, 440); ctx.lineTo(788, 200); ctx.stroke();
-    ctx.fillStyle = "rgba(86,184,255,0.15)"; ctx.fillRect(548, 230, 232, 206);
-    ctx.strokeStyle = "rgba(233,246,243,0.6)"; ctx.lineWidth = 2.5;
+    const wg = ctx.createLinearGradient(0, 230, 0, 436);
+    wg.addColorStop(0, "rgba(86,184,255,0.10)"); wg.addColorStop(1, "rgba(86,184,255,0.22)");
+    ctx.fillStyle = wg; ctx.fillRect(548, 230, 232, 206);
+    ctx.strokeStyle = "rgba(214,240,244,0.6)"; ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.roundRect(610, 240, 70, 180, 6); ctx.stroke();
-    ctx.fillStyle = "rgba(255,255,255,0.25)";
-    ctx.fillRect(613, 243, 64, Math.min(160, S.co2 * 4));
+    const gh = Math.min(160, S.co2 * 4);
+    if (!arY && gh > 4) glow(ctx, 645, 243 + gh / 2, 60, [255, 255, 255], 0.12);
+    ctx.fillStyle = "rgba(255,255,255,0.3)";
+    ctx.fillRect(613, 243, 64, gh);
+    ctx.strokeStyle = "rgba(255,255,255,0.4)";
+    for (let i = 1; i < 5; i++) { ctx.beginPath(); ctx.moveTo(613, 243 + i * 32); ctx.lineTo(625, 243 + i * 32); ctx.stroke(); }
     ctx.fillStyle = "#8fbcb8"; ctx.font = `11px ${MONO}`;
     ctx.fillText(`CO₂ = ${fmt(S.co2, 0)} mL`, 600, 470);
     hud(ctx, 140, 470, 420, 60, mode === "ar");

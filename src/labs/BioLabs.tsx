@@ -3,6 +3,7 @@ import { LiveChart, type SeriesDef } from "../components/Chart";
 import { LabShell, type FeedItem, type LabMode } from "../components/LabShell";
 import { Slider } from "../components/ui";
 import { fmt, useForce, useRaf } from "../lib/utils";
+import { bioScene, euCell, glow, hud, petri } from "./draw";
 import type { Experiment } from "../data/catalog";
 
 function sr(name: string, color: string, arr: { x: number; y: number }[]): SeriesDef {
@@ -94,22 +95,21 @@ export function GeneticsLab({ exp, onBack, initMode }: { exp: Experiment; onBack
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     const W = 960, H = 560;
-    ctx.clearRect(0, 0, W, H);
-    if (!ar) {
-      const g = ctx.createLinearGradient(0, 0, 0, H);
-      g.addColorStop(0, "#082229"); g.addColorStop(1, "#0b3038");
-      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    }
-    // individuals grid
+    bioScene(ctx, W, H, ar, performance.now() / 1000);
+    // population panel
+    ctx.fillStyle = "rgba(6,26,22,0.5)";
+    ctx.strokeStyle = "rgba(46,120,96,0.5)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect(100, 58, 720, 396, 14); ctx.fill(); ctx.stroke();
+    // individuals as living cells
     const { aa, ab, bb } = S.counts;
-    const cols = 20, cell = 34, ox = 120, oy = 90;
+    const cols = 20, cw = 34, ox = 120, oy = 90, tt = performance.now() / 1000;
     let i = 0;
     const put = (n: number, color: string) => {
       for (let k = 0; k < n; k++) {
-        const cx = ox + (i % cols) * (cell + 6) + cell / 2;
-        const cy = oy + Math.floor(i / cols) * (cell + 6) + cell / 2;
-        ctx.fillStyle = color;
-        ctx.beginPath(); ctx.arc(cx, cy, 12, 0, Math.PI * 2); ctx.fill();
+        const cx = ox + (i % cols) * (cw + 6) + cw / 2 + Math.sin(tt * 1.3 + i * 2.7) * 1.6;
+        const cy = oy + Math.floor(i / cols) * (cw + 6) + cw / 2 + Math.cos(tt * 1.1 + i * 1.9) * 1.6;
+        euCell(ctx, cx, cy, 12, color, true, ar);
         i++;
       }
     };
@@ -118,26 +118,31 @@ export function GeneticsLab({ exp, onBack, initMode }: { exp: Experiment; onBack
     put(bb, "#56b8ff");
     // legend + freq bar
     const p = alleleFreq();
-    ctx.fillStyle = ar ? "rgba(4,25,29,0.6)" : "rgba(4,25,29,0.8)";
-    ctx.strokeStyle = "rgba(23,80,89,0.9)";
-    ctx.beginPath(); ctx.roundRect(660, 400, 260, 120, 10); ctx.fill(); ctx.stroke();
+    hud(ctx, 660, 400, 260, 120, ar);
     ctx.font = '13px "IBM Plex Mono", monospace';
     ctx.fillStyle = "#f2a83b"; ctx.fillText(`AA = ${aa}`, 680, 428);
     ctx.fillStyle = "#8fbcb8"; ctx.fillText(`AB = ${ab}`, 680, 450);
     ctx.fillStyle = "#56b8ff"; ctx.fillText(`BB = ${bb}`, 680, 472);
     ctx.fillStyle = "#35d3c2";
     ctx.fillText(`p(A) = ${fmt(p, 3)}`, 680, 496);
-    // freq bar
+    // allele frequency bar with glow marker
     ctx.fillStyle = "#10393f";
-    ctx.fillRect(120, 480, 460, 16);
-    ctx.fillStyle = "#f2a83b";
-    ctx.fillRect(120, 480, 460 * p, 16);
-    ctx.fillStyle = "#56b8ff";
-    ctx.fillRect(120 + 460 * p, 480, 460 * (1 - p), 16);
+    ctx.beginPath(); ctx.roundRect(120, 480, 460, 16, 8); ctx.fill();
+    if (!ar) glow(ctx, 120 + 460 * p, 488, 40, [233, 246, 243], 0.35);
+    const bg1 = ctx.createLinearGradient(120, 0, 120 + 460 * p, 0);
+    bg1.addColorStop(0, "#f2c877"); bg1.addColorStop(1, "#f2a83b");
+    ctx.fillStyle = bg1;
+    ctx.beginPath(); ctx.roundRect(120, 480, Math.max(8, 460 * p), 16, 8); ctx.fill();
+    const bg2 = ctx.createLinearGradient(120 + 460 * p, 0, 580, 0);
+    bg2.addColorStop(0, "#56b8ff"); bg2.addColorStop(1, "#2f7fc4");
+    ctx.fillStyle = bg2;
+    ctx.beginPath(); ctx.roundRect(120 + 460 * p, 480, Math.max(8, 460 * (1 - p)), 16, 8); ctx.fill();
+    ctx.fillStyle = "#e9f6f3";
+    ctx.beginPath(); ctx.roundRect(118 + 460 * p, 476, 4, 24, 2); ctx.fill();
     ctx.fillStyle = "#8fbcb8";
     ctx.font = '11px Vazirmatn, sans-serif';
-    ctx.fillText("فراوانی الل A در برابر B", 120, 516);
-    ctx.fillStyle = "#e9f6f3";
+    ctx.fillText("فراوانی الل A در برابر B", 120, 518);
+    ctx.fillStyle = "#a5d95c";
     ctx.font = '13px Vazirmatn, sans-serif';
     ctx.fillText(`نسل ${S.gen}`, 120, 70);
   };
@@ -266,15 +271,29 @@ export function CultureLab({ exp, onBack, initMode }: { exp: Experiment; onBack:
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     const W = 960, H = 560;
-    ctx.clearRect(0, 0, W, H);
-    if (!ar) {
-      const g = ctx.createLinearGradient(0, 0, 0, H);
-      g.addColorStop(0, "#082229"); g.addColorStop(1, "#0b3038");
-      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    }
-    // flask
+    bioScene(ctx, W, H, ar, performance.now() / 1000);
+    // incubation flask (glass + turbid broth)
     const fx = 240, fy = 300;
-    ctx.strokeStyle = "rgba(233,246,243,0.55)";
+    const turb = Math.min(1, S.Nv / S.cap);
+    if (!ar) glow(ctx, fx, fy + 20, 150, [165, 217, 92], 0.08 + turb * 0.2);
+    const broth = ctx.createLinearGradient(0, 250, 0, fy + 90);
+    broth.addColorStop(0, `rgba(165,217,92,${(0.10 + turb * 0.3).toFixed(2)})`);
+    broth.addColorStop(1, `rgba(120,190,80,${(0.16 + turb * 0.42).toFixed(2)})`);
+    ctx.fillStyle = broth;
+    ctx.beginPath();
+    ctx.moveTo(fx - 105, 250);
+    ctx.bezierCurveTo(fx - 118, fy + 50, fx - 112, fy + 62, fx - 66, fy + 86);
+    ctx.lineTo(fx + 66, fy + 86);
+    ctx.bezierCurveTo(fx + 112, fy + 62, fx + 118, fy + 50, fx + 105, 250);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "rgba(165,217,92,0.06)";
+    ctx.beginPath();
+    ctx.moveTo(fx - 22, 170);
+    ctx.bezierCurveTo(fx - 120, 210, fx - 120, fy + 60, fx - 70, fy + 90);
+    ctx.lineTo(fx + 70, fy + 90);
+    ctx.bezierCurveTo(fx + 120, fy + 60, fx + 120, 210, fx + 22, 170);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = "rgba(214,240,244,0.6)";
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(fx - 22, 120); ctx.lineTo(fx - 22, 170);
@@ -283,36 +302,47 @@ export function CultureLab({ exp, onBack, initMode }: { exp: Experiment; onBack:
     ctx.bezierCurveTo(fx + 120, fy + 60, fx + 120, 210, fx + 22, 170);
     ctx.lineTo(fx + 22, 120);
     ctx.stroke();
-    const turb = Math.min(1, S.Nv / S.cap);
-    ctx.fillStyle = `rgba(165,217,92,${(0.05 + turb * 0.35).toFixed(2)})`;
-    ctx.beginPath();
-    ctx.moveTo(fx - 105, 250);
-    ctx.bezierCurveTo(fx - 118, fy + 50, fx - 112, fy + 62, fx - 66, fy + 86);
-    ctx.lineTo(fx + 66, fy + 86);
-    ctx.bezierCurveTo(fx + 112, fy + 62, fx + 118, fy + 50, fx + 105, 250);
-    ctx.closePath(); ctx.fill();
-    // bacteria dots
+    // glass shine
+    ctx.strokeStyle = "rgba(255,255,255,0.25)"; ctx.lineWidth = 3; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(fx - 96, 240); ctx.bezierCurveTo(fx - 104, 300, fx - 96, 340, fx - 70, 372); ctx.stroke();
+    // bacteria with glow
     const dots = Math.min(60, Math.round(turb * 60));
     for (let i = 0; i < dots; i++) {
       const x = fx - 80 + ((i * 53) % 160), y = 270 + ((i * 97) % 110) + Math.sin(performance.now() / 300 + i) * 4;
-      ctx.fillStyle = "rgba(165,217,92,0.7)";
+      if (!ar) glow(ctx, x, y, 8, [165, 217, 92], 0.3);
+      ctx.fillStyle = "rgba(200,240,140,0.9)";
       ctx.beginPath(); ctx.arc(x, y, 2.2, 0, Math.PI * 2); ctx.fill();
     }
-    // agar plate
+    // agar plate with texture + glowing lawn
     const px = 680, py = 280, pr = 150;
-    ctx.fillStyle = "#3a2f24";
-    ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#8a6f4d";
-    ctx.beginPath(); ctx.arc(px, py, pr - 10, 0, Math.PI * 2); ctx.fill();
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 24; ctx.shadowOffsetY = 10;
+    ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.fillStyle = "#2a2118"; ctx.fill();
+    ctx.restore();
+    petri(ctx, px, py, pr, ar);
     if (S.plated) {
-      // lawn
-      ctx.fillStyle = "rgba(165,217,92,0.5)";
+      const lawn = ctx.createRadialGradient(px, py, 10, px, py, pr - 14);
+      lawn.addColorStop(0, "rgba(180,230,120,0.75)");
+      lawn.addColorStop(0.8, "rgba(140,205,95,0.55)");
+      lawn.addColorStop(1, "rgba(110,170,80,0.4)");
+      ctx.fillStyle = lawn;
       ctx.beginPath(); ctx.arc(px, py, pr - 14, 0, Math.PI * 2); ctx.fill();
+      if (!ar) glow(ctx, px, py, pr - 10, [165, 217, 92], 0.12);
       const z = S.zones[S.zones.length - 1] ?? 0;
       if (z > 0) {
-        ctx.fillStyle = "#8a6f4d";
-        ctx.beginPath(); ctx.arc(px, py, z * 3.2, 0, Math.PI * 2); ctx.fill();
-        // disk
+        const zr = z * 3.2;
+        const zoneG = ctx.createRadialGradient(px, py, 6, px, py, zr);
+        zoneG.addColorStop(0, "rgba(170,135,95,0.95)");
+        zoneG.addColorStop(0.75, "rgba(150,118,82,0.85)");
+        zoneG.addColorStop(1, "rgba(140,205,95,0.35)");
+        ctx.fillStyle = zoneG;
+        ctx.beginPath(); ctx.arc(px, py, zr, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "rgba(165,217,92,0.8)"; ctx.lineWidth = 1.6;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.arc(px, py, zr, 0, Math.PI * 2); ctx.stroke();
+        ctx.setLineDash([]);
+        // antibiotic disk
+        if (!ar) glow(ctx, px, py, 26, [233, 246, 243], 0.25);
         ctx.fillStyle = "#e9f6f3";
         ctx.beginPath(); ctx.arc(px, py, 12, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = "#04191d";
@@ -321,23 +351,21 @@ export function CultureLab({ exp, onBack, initMode }: { exp: Experiment; onBack:
         ctx.fillText("AMP", px, py + 3);
         ctx.textAlign = "left";
         // zone diameter arrow
-        ctx.strokeStyle = "#35d3c2";
-        ctx.beginPath(); ctx.moveTo(px - z * 3.2, py); ctx.lineTo(px + z * 3.2, py); ctx.stroke();
+        ctx.strokeStyle = "#35d3c2"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(px - zr, py); ctx.lineTo(px + zr, py); ctx.stroke();
         ctx.fillStyle = "#35d3c2";
         ctx.font = '12px "IBM Plex Mono", monospace';
-        ctx.fillText(`${fmt(z, 1)} mm`, px + z * 3.2 + 8, py + 4);
+        ctx.fillText(`${fmt(z, 1)} mm`, px + zr + 8, py + 4);
       }
     } else {
-      ctx.fillStyle = "rgba(233,246,243,0.4)";
+      ctx.fillStyle = "rgba(233,246,243,0.45)";
       ctx.font = '12px Vazirmatn, sans-serif';
       ctx.textAlign = "center";
       ctx.fillText("پلیت آماده کشت", px, py);
       ctx.textAlign = "left";
     }
     // HUD
-    ctx.fillStyle = ar ? "rgba(4,25,29,0.6)" : "rgba(4,25,29,0.8)";
-    ctx.strokeStyle = "rgba(23,80,89,0.9)";
-    ctx.beginPath(); ctx.roundRect(80, 460, 500, 64, 10); ctx.fill(); ctx.stroke();
+    hud(ctx, 80, 460, 500, 64, ar);
     ctx.font = '14px "IBM Plex Mono", monospace';
     ctx.fillStyle = "#e9f6f3";
     ctx.fillText(`N = ${fmt(S.Nv, 0)} CFU/mL   log₁₀N = ${fmt(Math.log10(S.Nv), 2)}`, 100, 488);

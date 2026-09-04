@@ -3,7 +3,7 @@ import { LiveChart } from "../components/Chart";
 import { LabShell, type FeedItem, type LabMode } from "../components/LabShell";
 import { Slider } from "../components/ui";
 import { fmt, useForce, useRaf } from "../lib/utils";
-import { bg, hud, FA, MONO, sr } from "./draw";
+import { bioScene as bg, glow, hex2rgb, hud, FA, MONO, sr } from "./draw";
 import type { Experiment } from "../data/catalog";
 
 type Props = { exp: Experiment; onBack: () => void; initMode?: LabMode };
@@ -51,10 +51,33 @@ export function MitosisLab({ exp, onBack, initMode }: Props) {
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     bg(ctx, 960, 560, mode === "ar");
-    ctx.strokeStyle = "rgba(42,122,128,0.6)"; ctx.lineWidth = 8;
+    const arMode = mode === "ar";
+    // microscope field: warm light pool + double lens ring
+    if (!arMode) glow(ctx, 480, 290, 330, [190, 230, 200], 0.1);
+    const pool = ctx.createRadialGradient(480, 290, 40, 480, 290, 262);
+    pool.addColorStop(0, "rgba(190,235,205,0.10)");
+    pool.addColorStop(0.8, "rgba(120,190,150,0.04)");
+    pool.addColorStop(1, "rgba(10,40,30,0.10)");
+    ctx.fillStyle = pool;
+    ctx.beginPath(); ctx.arc(480, 290, 260, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "rgba(46,120,96,0.7)"; ctx.lineWidth = 9;
     ctx.beginPath(); ctx.arc(480, 290, 260, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = "rgba(140,225,175,0.35)"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(480, 290, 250, 0, Math.PI * 2); ctx.stroke();
+    // lens vignette
+    if (!arMode) {
+      const vg = ctx.createRadialGradient(480, 290, 170, 480, 290, 300);
+      vg.addColorStop(0, "rgba(0,0,0,0)");
+      vg.addColorStop(1, "rgba(2,12,9,0.55)");
+      ctx.fillStyle = vg;
+      ctx.beginPath(); ctx.arc(480, 290, 300, 0, Math.PI * 2); ctx.fill();
+    }
     for (const c of S.cells) {
-      ctx.fillStyle = "rgba(11,48,56,0.9)";
+      if (!arMode) glow(ctx, c.x, c.y, 40, hex2rgb(PH_COLORS[c.ph]), c.picked ? 0.35 : 0.16);
+      const cg = ctx.createRadialGradient(c.x - 6, c.y - 6, 3, c.x, c.y, 24);
+      cg.addColorStop(0, "rgba(30,74,66,0.95)");
+      cg.addColorStop(1, "rgba(10,42,38,0.92)");
+      ctx.fillStyle = cg;
       ctx.strokeStyle = PH_COLORS[c.ph];
       ctx.lineWidth = c.picked ? 3 : 2;
       ctx.beginPath(); ctx.arc(c.x, c.y, 24, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -150,13 +173,34 @@ export function LotkaLab({ exp, onBack, initMode }: Props) {
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     bg(ctx, 960, 560, mode === "ar");
+    const arMode2 = mode === "ar";
     const gx = 80, gy = 80, gw = 460, gh = 380;
+    // graph panel
+    ctx.fillStyle = "rgba(6,26,22,0.5)";
+    ctx.beginPath(); ctx.roundRect(gx - 24, gy - 34, gw + 48, gh + 58, 12); ctx.fill();
     ctx.strokeStyle = "rgba(143,188,184,0.4)";
     ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy + gh); ctx.lineTo(gx + gw, gy + gh); ctx.stroke();
     const xmax = Math.max(80, ...S.series.map((p) => p.x)) * 1.1;
     const ymax = Math.max(30, ...S.series.map((p) => p.y)) * 1.1;
+    // prey area fill
+    if (S.series.length > 1) {
+      const ag = ctx.createLinearGradient(0, gy, 0, gy + gh);
+      ag.addColorStop(0, "rgba(165,217,92,0.22)");
+      ag.addColorStop(1, "rgba(165,217,92,0)");
+      ctx.fillStyle = ag;
+      ctx.beginPath();
+      S.series.forEach((p, i) => {
+        const px = gx + (p.t / Math.max(S.t, 30)) * gw;
+        const py = gy + gh - (p.x / xmax) * gh;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      });
+      ctx.lineTo(gx + (S.series[S.series.length - 1].t / Math.max(S.t, 30)) * gw, gy + gh);
+      ctx.lineTo(gx + (S.series[0].t / Math.max(S.t, 30)) * gw, gy + gh);
+      ctx.closePath(); ctx.fill();
+    }
     for (const [key, col] of [["x", "#a5d95c"], ["y", "#ff6f61"]] as ["x" | "y", string][]) {
-      ctx.strokeStyle = col; ctx.lineWidth = 2.2;
+      ctx.strokeStyle = col; ctx.lineWidth = 2.4;
+      if (!arMode2) { ctx.shadowColor = col; ctx.shadowBlur = 7; }
       ctx.beginPath();
       S.series.forEach((p, i) => {
         const px = gx + (p.t / Math.max(S.t, 30)) * gw;
@@ -164,17 +208,23 @@ export function LotkaLab({ exp, onBack, initMode }: Props) {
         if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
       });
       ctx.stroke();
+      ctx.shadowBlur = 0;
     }
     const px0 = 620, py0 = 90, ps = 300;
+    ctx.fillStyle = "rgba(6,26,22,0.5)";
+    ctx.beginPath(); ctx.roundRect(px0 - 14, py0 - 14, ps + 28, ps + 28, 12); ctx.fill();
     ctx.strokeStyle = "rgba(143,188,184,0.4)";
     ctx.strokeRect(px0, py0, ps, ps);
-    ctx.strokeStyle = "#35d3c2"; ctx.lineWidth = 1.6;
+    ctx.strokeStyle = "#35d3c2"; ctx.lineWidth = 1.8;
+    if (!arMode2) { ctx.shadowColor = "#35d3c2"; ctx.shadowBlur = 6; }
     ctx.beginPath();
     S.series.forEach((p, i) => {
       const px = px0 + (p.x / xmax) * ps, py = py0 + ps - (p.y / ymax) * ps;
       if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
     });
     ctx.stroke();
+    ctx.shadowBlur = 0;
+    if (!arMode2) glow(ctx, px0 + (S.prey / xmax) * ps, py0 + ps - (S.pred / ymax) * ps, 34, [242, 168, 59], 0.5);
     ctx.fillStyle = "#f2a83b";
     ctx.beginPath(); ctx.arc(px0 + (S.prey / xmax) * ps, py0 + ps - (S.pred / ymax) * ps, 5, 0, Math.PI * 2); ctx.fill();
     ctx.font = `11px ${FA}`; ctx.fillStyle = "#8fbcb8";
@@ -255,38 +305,69 @@ export function PcrLab({ exp, onBack, initMode }: Props) {
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     bg(ctx, 960, 560, mode === "ar");
+    const arMode3 = mode === "ar";
     const temps = [95, 55, 72];
     const names = ["دناتوراسیون ۹۵°", "اتصال پرایمر ۵۵°", "طویل‌شدن ۷۲°"];
     const cols = ["#ff6f61", "#56b8ff", "#a5d95c"];
     for (let i = 0; i < 3; i++) {
       const bx = 100 + i * 290;
-      ctx.fillStyle = S.phase === i && S.running ? `${cols[i]}30` : "rgba(11,48,56,0.8)";
-      ctx.strokeStyle = S.phase === i && S.running ? cols[i] : "rgba(23,80,89,0.8)";
-      ctx.lineWidth = 2.5;
+      const active = S.phase === i && S.running;
+      if (active && !arMode3) glow(ctx, bx + 125, 225, 150, hex2rgb(cols[i]), 0.3);
+      const bgr = ctx.createLinearGradient(bx, 150, bx, 300);
+      if (active) { bgr.addColorStop(0, `${cols[i]}45`); bgr.addColorStop(1, `${cols[i]}18`); }
+      else { bgr.addColorStop(0, "rgba(15,61,70,0.85)"); bgr.addColorStop(1, "rgba(8,38,44,0.85)"); }
+      ctx.fillStyle = bgr;
+      ctx.strokeStyle = active ? cols[i] : "rgba(23,80,89,0.8)";
+      ctx.lineWidth = active ? 3 : 2;
       ctx.beginPath(); ctx.roundRect(bx, 150, 250, 150, 12); ctx.fill(); ctx.stroke();
       ctx.fillStyle = cols[i]; ctx.font = `700 30px ${MONO}`;
       ctx.fillText(`${temps[i]}°C`, bx + 78, 215);
       ctx.fillStyle = "#e9f6f3"; ctx.font = `12px ${FA}`;
       ctx.fillText(names[i], bx + 66, 250);
+      if (active) {
+        ctx.fillStyle = cols[i];
+        ctx.beginPath(); ctx.arc(bx + 222, 172, 5, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    // connector arrows
+    ctx.strokeStyle = "rgba(143,188,184,0.4)"; ctx.lineWidth = 2;
+    for (const ax of [352, 642]) {
+      ctx.beginPath(); ctx.moveTo(ax, 225); ctx.lineTo(ax + 36, 225); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ax + 36, 225); ctx.lineTo(ax + 27, 219); ctx.moveTo(ax + 36, 225); ctx.lineTo(ax + 27, 231); ctx.stroke();
     }
     ctx.fillStyle = "#8fbcb8"; ctx.font = `13px ${FA}`;
     ctx.fillText(`چرخه ${S.cycle} از ${S.cycles}`, 110, 120);
     const barW = Math.min(560, Math.log10(copies / S.n0 + 1) / Math.log10(Math.pow(1 + S.eff, S.cycles) + 1) * 560);
-    ctx.fillStyle = "rgba(23,80,89,0.6)"; ctx.fillRect(110, 380, 560, 26);
-    ctx.fillStyle = "#35d3c2"; ctx.fillRect(110, 380, barW, 26);
+    ctx.fillStyle = "rgba(23,80,89,0.6)";
+    ctx.beginPath(); ctx.roundRect(110, 380, 560, 26, 13); ctx.fill();
+    if (barW > 2) {
+      const pgr = ctx.createLinearGradient(110, 0, 110 + barW, 0);
+      pgr.addColorStop(0, "#35d3c2"); pgr.addColorStop(1, "#a5d95c");
+      if (!arMode3) glow(ctx, 110 + barW, 393, 30, [165, 217, 92], 0.5);
+      ctx.fillStyle = pgr;
+      ctx.beginPath(); ctx.roundRect(110, 380, Math.max(14, barW), 26, 13); ctx.fill();
+    }
     ctx.fillStyle = "#e9f6f3"; ctx.font = `13px ${MONO}`;
     ctx.fillText(`کپی‌ها = ${copies.toExponential(2)}`, 110, 440);
     ctx.fillStyle = "#8fbcb8"; ctx.font = `12px ${FA}`;
     ctx.fillText(`N = N₀(1+E)ⁿ = ${fmt(S.n0, 0)} × ${fmt(1 + S.eff, 2)}^${S.cycle}`, 110, 470);
-    const gY = 490;
-    ctx.fillStyle = "rgba(86,184,255,0.15)"; ctx.fillRect(690, 160, 220, 330);
+    // gel electrophoresis with glowing bands
+    const gelG = ctx.createLinearGradient(690, 160, 690, 490);
+    gelG.addColorStop(0, "rgba(86,184,255,0.20)");
+    gelG.addColorStop(1, "rgba(40,100,170,0.12)");
+    ctx.fillStyle = gelG; ctx.fillRect(690, 160, 220, 330);
+    ctx.strokeStyle = "rgba(143,188,184,0.35)"; ctx.strokeRect(690, 160, 220, 330);
     for (let lane = 0; lane < 3; lane++) {
       const lx = 715 + lane * 70;
       ctx.fillStyle = "rgba(4,25,29,0.7)"; ctx.fillRect(lx, 180, 40, 290);
       const sizes = lane === 0 ? [280] : lane === 1 ? [200, 120] : [240, 150, 90];
       for (const s of sizes) {
         const bandY = 190 + (s / 300) * 260;
-        ctx.fillStyle = "#a5d95c"; ctx.fillRect(lx + 4, bandY, 32, 7);
+        if (!arMode3) glow(ctx, lx + 20, bandY + 3, 26, [165, 217, 92], 0.5);
+        const bnd = ctx.createLinearGradient(0, bandY, 0, bandY + 7);
+        bnd.addColorStop(0, "#d3f5a0"); bnd.addColorStop(1, "#a5d95c");
+        ctx.fillStyle = bnd;
+        ctx.beginPath(); ctx.roundRect(lx + 4, bandY, 32, 7, 3); ctx.fill();
       }
       ctx.fillStyle = "#8fbcb8"; ctx.font = `10px ${FA}`;
       ctx.fillText(lane === 0 ? "نردبان" : `نمونه ${lane}`, lx, 480);
