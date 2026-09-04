@@ -4,6 +4,7 @@ import { LabShell, type FeedItem, type LabMode } from "../components/LabShell";
 import { Slider } from "../components/ui";
 import { fmt, useForce, useRaf } from "../lib/utils";
 import type { Experiment } from "../data/catalog";
+import { glow, physScene, trail } from "./draw";
 
 function sr(name: string, color: string, arr: { x: number; y: number }[]): SeriesDef {
   return { name, color, ["data"]: arr };
@@ -92,47 +93,86 @@ export function PendulumLab({ exp, onBack, initMode }: { exp: Experiment; onBack
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     const W = 960, H = 560;
-    ctx.clearRect(0, 0, W, H);
-    if (!ar) {
-      const g = ctx.createLinearGradient(0, 0, 0, H);
-      g.addColorStop(0, "#082229"); g.addColorStop(1, "#0b3038");
-      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    physScene(ctx, W, H, ar, performance.now() / 1000);
+    const ox = 430, oy = 104, R = S.L * 230;
+    const px = ox + Math.sin(S.th) * R, py = oy + Math.cos(S.th) * R;
+
+    // swing-path arc (ghost of full travel) + motion trail
+    ctx.strokeStyle = "rgba(86,184,255,0.14)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(ox, oy, R, Math.PI / 2 - 1.2, Math.PI / 2 + 1.2); ctx.stroke();
+    if (!ar && Math.abs(S.w) > 0.05) {
+      for (let k = 1; k <= 6; k++) {
+        const thG = S.th - Math.sign(S.w) * k * 0.045;
+        const gx = ox + Math.sin(thG) * R, gy = oy + Math.cos(thG) * R;
+        ctx.globalAlpha = 0.16 * (1 - k / 7);
+        ctx.fillStyle = "#f2a83b";
+        ctx.beginPath(); ctx.arc(gx, gy, 15 - k, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
     }
-    const ox = 430, oy = 90, px = ox + Math.sin(S.th) * S.L * 230, py = oy + Math.cos(S.th) * S.L * 230;
-    // protractor arcs
-    for (let a = -60; a <= 60; a += 15) {
-      const r1 = ((a - 90) * Math.PI) / 180 + Math.PI / 2;
-      ctx.strokeStyle = "rgba(143,188,184,0.18)";
+    // protractor with glowing ticks
+    for (let a = -75; a <= 75; a += 15) {
+      const major = a % 45 === 0;
+      ctx.strokeStyle = major ? "rgba(242,168,59,0.5)" : "rgba(143,188,184,0.22)";
+      ctx.lineWidth = major ? 2 : 1.2;
       ctx.beginPath();
-      ctx.moveTo(ox + Math.sin((a * Math.PI) / 180) * 150, oy + Math.cos((a * Math.PI) / 180) * 150);
-      ctx.lineTo(ox + Math.sin((a * Math.PI) / 180) * 165, oy + Math.cos((a * Math.PI) / 180) * 165);
+      ctx.moveTo(ox + Math.sin((a * Math.PI) / 180) * 148, oy + Math.cos((a * Math.PI) / 180) * 148);
+      ctx.lineTo(ox + Math.sin((a * Math.PI) / 180) * (major ? 170 : 162), oy + Math.cos((a * Math.PI) / 180) * (major ? 170 : 162));
       ctx.stroke();
-      void r1;
+      if (major) {
+        ctx.fillStyle = "rgba(242,168,59,0.7)";
+        ctx.font = '9px "IBM Plex Mono", monospace';
+        ctx.fillText(`${Math.abs(a)}°`, ox + Math.sin((a * Math.PI) / 180) * 184 - 8, oy + Math.cos((a * Math.PI) / 180) * 184);
+      }
     }
     ctx.setLineDash([5, 6]);
     ctx.strokeStyle = "rgba(143,188,184,0.35)";
-    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox, oy + 380); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox, oy + 400); ctx.stroke();
     ctx.setLineDash([]);
+    // metal stand
+    const mg = ctx.createLinearGradient(ox - 70, 0, ox + 70, 0);
+    mg.addColorStop(0, "#1d5b63"); mg.addColorStop(0.5, "#3a8a94"); mg.addColorStop(1, "#1d5b63");
+    ctx.fillStyle = mg;
+    ctx.beginPath(); ctx.roundRect(ox - 74, oy - 26, 148, 16, 6); ctx.fill();
+    ctx.fillStyle = "#16454d";
+    ctx.beginPath(); ctx.roundRect(ox - 90, oy - 34, 180, 10, 4); ctx.fill();
+    glow(ctx, ox, oy, 46, [53, 211, 194], 0.16);
     // rod
-    ctx.strokeStyle = "#8fbcb8"; ctx.lineWidth = 2.5;
+    ctx.strokeStyle = "#b9d4d1"; ctx.lineWidth = 2.6;
     ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(px, py); ctx.stroke();
-    // pivot
-    ctx.fillStyle = "#2a7a80";
-    ctx.fillRect(ox - 60, oy - 14, 120, 12);
-    // bob
+    // pivot hub
+    ctx.fillStyle = "#0b3038"; ctx.strokeStyle = "#35d3c2"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(ox, oy, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // bob — layered with specular highlight
+    if (!ar) { ctx.shadowColor = "#f2a83b"; ctx.shadowBlur = 26; }
     ctx.fillStyle = "#f2a83b";
-    if (!ar) { ctx.shadowColor = "#f2a83b"; ctx.shadowBlur = 16; }
     ctx.beginPath(); ctx.arc(px, py, 17, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
+    const bg2 = ctx.createRadialGradient(px - 6, py - 7, 2, px, py, 18);
+    bg2.addColorStop(0, "rgba(255,240,200,0.85)");
+    bg2.addColorStop(0.35, "rgba(255,208,138,0.25)");
+    bg2.addColorStop(1, "rgba(242,168,59,0)");
+    ctx.fillStyle = bg2;
+    ctx.beginPath(); ctx.arc(px, py, 18, 0, Math.PI * 2); ctx.fill();
     // velocity vector
     const vx = Math.cos(S.th) * S.w * 46, vy = -Math.sin(S.th) * S.w * 46;
     if (Math.abs(S.w) > 0.05) {
       ctx.strokeStyle = "#35d3c2"; ctx.lineWidth = 2.5;
       ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + vx, py + vy); ctx.stroke();
+      const an = Math.atan2(vy, vx);
+      ctx.fillStyle = "#35d3c2";
+      ctx.beginPath();
+      ctx.moveTo(px + vx, py + vy);
+      ctx.lineTo(px + vx - 9 * Math.cos(an - 0.4), py + vy - 9 * Math.sin(an - 0.4));
+      ctx.lineTo(px + vx - 9 * Math.cos(an + 0.4), py + vy - 9 * Math.sin(an + 0.4));
+      ctx.closePath(); ctx.fill();
     }
-    // angle arc
-    ctx.strokeStyle = "#f2a83b";
+    // angle arc (glowing)
+    ctx.strokeStyle = "#f2a83b"; ctx.lineWidth = 2.2;
+    if (!ar) { ctx.shadowColor = "#f2a83b"; ctx.shadowBlur = 8; }
     ctx.beginPath(); ctx.arc(ox, oy, 60, Math.PI / 2 - S.th, Math.PI / 2, S.th > 0); ctx.stroke();
+    ctx.shadowBlur = 0;
     ctx.fillStyle = "#e9f6f3";
     ctx.font = '14px "IBM Plex Mono", monospace';
     ctx.fillText(`θ = ${fmt((S.th * 180) / Math.PI, 1)}°`, ox + 74, oy + 52);
@@ -327,51 +367,79 @@ export function ProjectileLab({ exp, onBack, initMode }: { exp: Experiment; onBa
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     const W = 960, H = 560;
-    ctx.clearRect(0, 0, W, H);
-    if (!ar) {
-      const g = ctx.createLinearGradient(0, 0, 0, H);
-      g.addColorStop(0, "#082229"); g.addColorStop(1, "#0b3038");
-      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    }
+    physScene(ctx, W, H, ar, performance.now() / 1000);
     const gy = 470, sc = 10.5;
-    ctx.strokeStyle = "#2a7a80"; ctx.lineWidth = 4;
+    // ground with metallic sheen + glow line
+    const gg = ctx.createLinearGradient(0, gy, 0, gy + 60);
+    gg.addColorStop(0, "rgba(29,91,99,0.55)");
+    gg.addColorStop(1, "rgba(29,91,99,0)");
+    ctx.fillStyle = gg;
+    ctx.fillRect(40, gy, 880, 60);
+    ctx.strokeStyle = "#3a8a94"; ctx.lineWidth = 3.5;
     ctx.beginPath(); ctx.moveTo(40, gy); ctx.lineTo(920, gy); ctx.stroke();
+    if (!ar) glow(ctx, 480, gy, 420, [53, 211, 194], 0.05);
     for (let m = 0; m <= 80; m += 10) {
-      ctx.strokeStyle = "rgba(143,188,184,0.25)";
-      ctx.beginPath(); ctx.moveTo(60 + m * sc, gy); ctx.lineTo(60 + m * sc, gy + 8); ctx.stroke();
+      ctx.strokeStyle = m % 20 === 0 ? "rgba(242,168,59,0.5)" : "rgba(143,188,184,0.25)";
+      ctx.lineWidth = m % 20 === 0 ? 2 : 1.2;
+      ctx.beginPath(); ctx.moveTo(60 + m * sc, gy); ctx.lineTo(60 + m * sc, gy + (m % 20 === 0 ? 12 : 7)); ctx.stroke();
       ctx.fillStyle = "#8fbcb8";
       ctx.font = '10px "IBM Plex Mono", monospace';
-      ctx.fillText(`${m}m`, 52 + m * sc, gy + 22);
+      ctx.fillText(`${m}m`, 52 + m * sc, gy + 24);
     }
     const X = (x: number) => 60 + x * sc, Y = (y: number) => gy - y * sc;
-    // vacuum path
-    ctx.setLineDash([6, 6]);
-    ctx.strokeStyle = "rgba(86,184,255,0.7)";
+    // vacuum path (ethereal dashed)
+    ctx.setLineDash([7, 7]);
+    ctx.strokeStyle = "rgba(86,184,255,0.75)";
     ctx.lineWidth = 2;
     ctx.beginPath();
     S.vac.forEach((p, i) => (i === 0 ? ctx.moveTo(X(p.x), Y(p.y)) : ctx.lineTo(X(p.x), Y(p.y))));
     ctx.stroke();
     ctx.setLineDash([]);
-    // air path
+    // air path with glowing trail
+    if (!ar && S.air.length > 2) trail(ctx, S.air.slice(-34).map((p) => ({ x: X(p.x), y: Y(p.y) })), "#f2a83b", 5);
     ctx.strokeStyle = "#f2a83b";
-    ctx.lineWidth = 3;
-    if (!ar) { ctx.shadowColor = "#f2a83b"; ctx.shadowBlur = 8; }
+    ctx.lineWidth = 2.6;
+    if (!ar) { ctx.shadowColor = "#f2a83b"; ctx.shadowBlur = 10; }
     ctx.beginPath();
     S.air.forEach((p, i) => (i === 0 ? ctx.moveTo(X(p.x), Y(p.y)) : ctx.lineTo(X(p.x), Y(p.y))));
     ctx.stroke();
     ctx.shadowBlur = 0;
-    // ball
+    // ball with glow + specular
     if (S.fired) {
+      glow(ctx, X(S.x), Y(S.y), 34, [242, 168, 59], 0.3);
       ctx.fillStyle = "#e9f6f3";
       ctx.beginPath(); ctx.arc(X(S.x), Y(S.y), 9, 0, Math.PI * 2); ctx.fill();
-      // velocity vector
-      ctx.strokeStyle = "#35d3c2";
+      const bs = ctx.createRadialGradient(X(S.x) - 3, Y(S.y) - 3, 1, X(S.x), Y(S.y), 10);
+      bs.addColorStop(0, "rgba(255,255,255,0.9)");
+      bs.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = bs;
+      ctx.beginPath(); ctx.arc(X(S.x), Y(S.y), 10, 0, Math.PI * 2); ctx.fill();
+      // velocity vector with arrowhead
+      ctx.strokeStyle = "#35d3c2"; ctx.lineWidth = 2.4;
       ctx.beginPath(); ctx.moveTo(X(S.x), Y(S.y)); ctx.lineTo(X(S.x) + S.vx * 2, Y(S.y) - S.vy * 2); ctx.stroke();
+      const an = Math.atan2(-S.vy, S.vx);
+      ctx.fillStyle = "#35d3c2";
+      ctx.beginPath();
+      ctx.moveTo(X(S.x) + S.vx * 2, Y(S.y) - S.vy * 2);
+      ctx.lineTo(X(S.x) + S.vx * 2 - 9 * Math.cos(an - 0.4), Y(S.y) - S.vy * 2 - 9 * Math.sin(an - 0.4));
+      ctx.lineTo(X(S.x) + S.vx * 2 - 9 * Math.cos(an + 0.4), Y(S.y) - S.vy * 2 - 9 * Math.sin(an + 0.4));
+      ctx.closePath(); ctx.fill();
     }
-    // launcher
+    // launcher cannon (metallic barrel + base)
     const la = (S.ang * Math.PI) / 180;
-    ctx.strokeStyle = "#8fbcb8"; ctx.lineWidth = 7;
-    ctx.beginPath(); ctx.moveTo(60, gy); ctx.lineTo(60 + Math.cos(la) * 52, gy - Math.sin(la) * 52); ctx.stroke();
+    ctx.save();
+    ctx.translate(60, gy);
+    ctx.rotate(-la);
+    const barrel = ctx.createLinearGradient(0, -8, 0, 8);
+    barrel.addColorStop(0, "#4a9aa4"); barrel.addColorStop(0.5, "#2a7a80"); barrel.addColorStop(1, "#16454d");
+    ctx.fillStyle = barrel;
+    ctx.beginPath(); ctx.roundRect(-8, -8, 64, 16, 6); ctx.fill();
+    ctx.fillStyle = "#f2a83b";
+    ctx.fillRect(52, -8, 5, 16);
+    ctx.restore();
+    ctx.fillStyle = "#16454d";
+    ctx.beginPath(); ctx.arc(60, gy, 13, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#3a8a94"; ctx.lineWidth = 2.5; ctx.stroke();
     // HUD
     ctx.fillStyle = ar ? "rgba(4,25,29,0.6)" : "rgba(4,25,29,0.8)";
     ctx.strokeStyle = "rgba(23,80,89,0.9)";

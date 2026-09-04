@@ -3,7 +3,7 @@ import { LiveChart } from "../components/Chart";
 import { LabShell, type FeedItem, type LabMode } from "../components/LabShell";
 import { Slider } from "../components/ui";
 import { fmt, useForce, useRaf } from "../lib/utils";
-import { bg, clamp, hud, FA, MONO, sr } from "./draw";
+import { physScene as bg, clamp, glow, hud, FA, MONO, sr } from "./draw";
 import type { Experiment } from "../data/catalog";
 
 type Props = { exp: Experiment; onBack: () => void; initMode?: LabMode };
@@ -50,14 +50,38 @@ export function CarnotLab({ exp, onBack, initMode }: Props) {
     const gasCol = `rgba(${Math.round(53 + t * 202)},${Math.round(211 - t * 100)},${Math.round(194 - t * 97)},0.5)`;
     const Vmax = c.Vc * 1.05, cTop = 130, cBot = 420;
     const pistonY = cBot - (st.V / Vmax) * (cBot - cTop - 40);
-    ctx.strokeStyle = "rgba(233,246,243,0.55)"; ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.moveTo(70, cTop); ctx.lineTo(70, cBot); ctx.lineTo(280, cBot); ctx.lineTo(280, cTop); ctx.stroke();
-    ctx.fillStyle = gasCol; ctx.fillRect(73, pistonY, 204, cBot - pistonY - 3);
-    ctx.fillStyle = "#8fbcb8"; ctx.fillRect(62, pistonY - 12, 226, 12); ctx.fillRect(168, pistonY - 52, 10, 42);
-    ctx.fillStyle = st.ph === 0 ? "rgba(255,111,97,0.85)" : "rgba(255,111,97,0.25)";
-    ctx.fillRect(62, cBot + 34, 226, 28);
-    ctx.fillStyle = st.ph === 2 ? "rgba(86,184,255,0.85)" : "rgba(86,184,255,0.25)";
-    ctx.fillRect(62, cTop - 62, 226, 28);
+    // cylinder walls (metallic)
+    const wall = ctx.createLinearGradient(66, 0, 80, 0);
+    wall.addColorStop(0, "#16454d"); wall.addColorStop(0.5, "#3a8a94"); wall.addColorStop(1, "#16454d");
+    ctx.fillStyle = wall;
+    ctx.fillRect(66, cTop, 8, cBot - cTop);
+    ctx.fillRect(276, cTop, 8, cBot - cTop);
+    ctx.fillStyle = "#1d5b63"; ctx.fillRect(66, cBot, 218, 8);
+    // gas with glow
+    if (mode !== "ar") glow(ctx, 175, (pistonY + cBot) / 2, 130, t > 0.5 ? [255, 130, 90] : [53, 211, 194], 0.16 + t * 0.1);
+    ctx.fillStyle = gasCol; ctx.fillRect(74, pistonY, 202, cBot - pistonY - 3);
+    // piston head (metal gradient) + rod
+    const ph2 = ctx.createLinearGradient(0, pistonY - 14, 0, pistonY + 2);
+    ph2.addColorStop(0, "#9fc4c0"); ph2.addColorStop(0.5, "#5d8a90"); ph2.addColorStop(1, "#2f626b");
+    ctx.fillStyle = ph2;
+    ctx.beginPath(); ctx.roundRect(60, pistonY - 14, 230, 14, 3); ctx.fill();
+    ctx.fillStyle = "#5d8a90"; ctx.fillRect(170, pistonY - 56, 10, 44);
+    ctx.fillStyle = "#2f626b"; ctx.fillRect(160, pistonY - 62, 30, 8);
+    // reservoirs with thermal glow
+    if (mode !== "ar") {
+      glow(ctx, 175, cBot + 48, 150, [255, 111, 97], st.ph === 0 ? 0.3 : 0.08);
+      glow(ctx, 175, cTop - 48, 150, [86, 184, 255], st.ph === 2 ? 0.3 : 0.08);
+    }
+    const hotG = ctx.createLinearGradient(62, cBot + 34, 62, cBot + 62);
+    hotG.addColorStop(0, st.ph === 0 ? "rgba(255,140,110,0.95)" : "rgba(255,111,97,0.28)");
+    hotG.addColorStop(1, st.ph === 0 ? "rgba(200,60,50,0.9)" : "rgba(255,111,97,0.18)");
+    ctx.fillStyle = hotG;
+    ctx.beginPath(); ctx.roundRect(62, cBot + 34, 226, 28, 5); ctx.fill();
+    const coldG = ctx.createLinearGradient(62, cTop - 62, 62, cTop - 34);
+    coldG.addColorStop(0, st.ph === 2 ? "rgba(120,200,255,0.95)" : "rgba(86,184,255,0.28)");
+    coldG.addColorStop(1, st.ph === 2 ? "rgba(50,130,230,0.9)" : "rgba(86,184,255,0.18)");
+    ctx.fillStyle = coldG;
+    ctx.beginPath(); ctx.roundRect(62, cTop - 62, 226, 28, 5); ctx.fill();
     ctx.fillStyle = "#e9f6f3"; ctx.font = `12px ${FA}`;
     ctx.fillText(`منبع گرم ${S.Th} K`, 118, cBot + 52);
     ctx.fillText(`منبع سرد ${S.Tc} K`, 118, cTop - 44);
@@ -270,8 +294,12 @@ export function DopplerLab({ exp, onBack, initMode }: Props) {
       ctx.moveTo(S.sx, 300); ctx.lineTo(S.sx - Math.cos(th) * 750, 300 + Math.sin(th) * 750);
       ctx.stroke();
     }
+    glow(ctx, S.sx, 300, 70, [242, 168, 59], 0.35);
     ctx.fillStyle = "#f2a83b";
     ctx.beginPath(); ctx.arc(S.sx, 300, 14, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "rgba(255,240,200,0.8)"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(S.sx, 300, 14, 0, Math.PI * 2); ctx.stroke();
+    glow(ctx, 790, 120, 40, [165, 217, 92], 0.25);
     ctx.fillStyle = "#a5d95c"; ctx.beginPath(); ctx.arc(790, 120, 15, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "#56b8ff"; ctx.beginPath(); ctx.arc(170, 120, 15, 0, Math.PI * 2); ctx.fill();
     ctx.font = `11px ${FA}`;

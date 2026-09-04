@@ -4,6 +4,7 @@ import { LabShell, type FeedItem, type LabMode } from "../components/LabShell";
 import { Slider } from "../components/ui";
 import { fmt, useForce, useRaf } from "../lib/utils";
 import type { Experiment } from "../data/catalog";
+import { glow, physScene } from "./draw";
 
 function sr(name: string, color: string, arr: { x: number; y: number }[]): SeriesDef {
   return { name, color, ["data"]: arr };
@@ -77,47 +78,81 @@ export function SnellLab({ exp, onBack, initMode }: { exp: Experiment; onBack: (
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     const W = 960, H = 560;
-    ctx.clearRect(0, 0, W, H);
-    if (!ar) { ctx.fillStyle = "#082229"; ctx.fillRect(0, 0, W, H); }
+    physScene(ctx, W, H, ar, performance.now() / 1000);
     const Ox = 480, Oy = 290, L = 250;
-    ctx.fillStyle = `rgba(86,184,255,${(0.03 + Math.min(1, (S.n1 - 1) / 1.5) * 0.12).toFixed(2)})`;
+    // media with depth gradients
+    const m1a = 0.05 + Math.min(1, (S.n1 - 1) / 1.5) * 0.14;
+    const g1 = ctx.createLinearGradient(0, 40, 0, Oy);
+    g1.addColorStop(0, `rgba(86,184,255,${(m1a * 0.4).toFixed(2)})`);
+    g1.addColorStop(1, `rgba(86,184,255,${m1a.toFixed(2)})`);
+    ctx.fillStyle = g1;
     ctx.fillRect(40, 40, W - 80, Oy - 40);
-    ctx.fillStyle = `rgba(86,184,255,${(0.03 + Math.min(1, (S.n2 - 1) / 1.5) * 0.2).toFixed(2)})`;
+    const m2a = 0.06 + Math.min(1, (S.n2 - 1) / 1.5) * 0.22;
+    const g2 = ctx.createLinearGradient(0, Oy, 0, H - 40);
+    g2.addColorStop(0, `rgba(86,184,255,${m2a.toFixed(2)})`);
+    g2.addColorStop(1, `rgba(60,150,235,${(m2a * 0.55).toFixed(2)})`);
+    ctx.fillStyle = g2;
     ctx.fillRect(40, Oy, W - 80, H - Oy - 40);
-    ctx.strokeStyle = "rgba(233,246,243,0.6)"; ctx.lineWidth = 2;
+    // interface — glowing line
+    if (!ar) glow(ctx, Ox, Oy, 300, [140, 220, 235], 0.10);
+    const il = ctx.createLinearGradient(40, 0, W - 40, 0);
+    il.addColorStop(0, "rgba(233,246,243,0.15)");
+    il.addColorStop(0.5, "rgba(233,246,243,0.85)");
+    il.addColorStop(1, "rgba(233,246,243,0.15)");
+    ctx.strokeStyle = il; ctx.lineWidth = 2.4;
     ctx.beginPath(); ctx.moveTo(40, Oy); ctx.lineTo(W - 40, Oy); ctx.stroke();
     ctx.setLineDash([6, 6]);
     ctx.strokeStyle = "rgba(143,188,184,0.5)";
     ctx.beginPath(); ctx.moveTo(Ox, 60); ctx.lineTo(Ox, H - 60); ctx.stroke();
     ctx.setLineDash([]);
     const t1r = (S.t1 * Math.PI) / 180;
+    // incident ray with glow + traveling photons
     ctx.strokeStyle = "#f2a83b"; ctx.lineWidth = 3;
-    if (!ar) { ctx.shadowColor = "#f2a83b"; ctx.shadowBlur = 10; }
+    if (!ar) { ctx.shadowColor = "#f2a83b"; ctx.shadowBlur = 14; }
     ctx.beginPath();
     ctx.moveTo(Ox - L * Math.sin(t1r), Oy - L * Math.cos(t1r));
     ctx.lineTo(Ox, Oy); ctx.stroke();
+    ctx.shadowBlur = 0;
+    const tt = performance.now() / 1000;
+    for (let i = 0; i < 4; i++) {
+      const u = ((tt * 0.9 + i * 0.25) % 1);
+      const fx = Ox - (1 - u) * L * Math.sin(t1r), fy = Oy - (1 - u) * L * Math.cos(t1r);
+      ctx.fillStyle = "rgba(255,224,150,0.95)";
+      ctx.beginPath(); ctx.arc(fx, fy, 3.2, 0, Math.PI * 2); ctx.fill();
+    }
+    // reflected
     ctx.globalAlpha = 0.25 + 0.75 * R;
-    ctx.strokeStyle = "#ff6f61";
+    ctx.strokeStyle = "#ff6f61"; ctx.lineWidth = 2.6;
+    if (!ar) { ctx.shadowColor = "#ff6f61"; ctx.shadowBlur = 10; }
     ctx.beginPath();
     ctx.moveTo(Ox, Oy);
     ctx.lineTo(Ox + L * Math.sin(t1r), Oy - L * Math.cos(t1r));
     ctx.stroke();
+    ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
+    // incidence point glow
+    if (!ar) glow(ctx, Ox, Oy, 60, [242, 168, 59], 0.35);
     if (!tir) {
       const t2r = (t2 * Math.PI) / 180;
-      ctx.strokeStyle = "#35d3c2";
+      ctx.strokeStyle = "#35d3c2"; ctx.lineWidth = 3;
       ctx.globalAlpha = 0.3 + 0.7 * (1 - R);
+      if (!ar) { ctx.shadowColor = "#35d3c2"; ctx.shadowBlur = 12; }
       ctx.beginPath(); ctx.moveTo(Ox, Oy); ctx.lineTo(Ox + L * Math.sin(t2r), Oy + L * Math.cos(t2r)); ctx.stroke();
+      ctx.shadowBlur = 0;
       ctx.globalAlpha = 1;
       ctx.fillStyle = "#35d3c2";
       ctx.font = '13px "IBM Plex Mono", monospace';
       ctx.fillText(`θ₂=${fmt(t2, 1)}°`, Ox + 74, Oy + 60);
+      // θ2 arc
+      ctx.strokeStyle = "rgba(53,211,194,0.7)"; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.arc(Ox, Oy, 56, Math.PI / 2, Math.PI / 2 - t2r, true); ctx.stroke();
     } else {
       ctx.fillStyle = "#ff6f61";
       ctx.font = '700 16px Vazirmatn, sans-serif';
       ctx.textAlign = "center";
       ctx.fillText("بازتاب درونی کلی (TIR)", Ox, Oy + 90);
       ctx.textAlign = "left";
+      if (!ar) glow(ctx, Ox, Oy, 90, [255, 111, 97], 0.3);
       if (isFinite(thetaC)) {
         const tc = (thetaC * Math.PI) / 180;
         ctx.setLineDash([4, 5]);
@@ -128,6 +163,9 @@ export function SnellLab({ exp, onBack, initMode }: { exp: Experiment; onBack: (
         ctx.fillText(`θc=${fmt(thetaC, 1)}°`, Ox - L * Math.sin(tc) - 10, Oy - L * Math.cos(tc) + 16);
       }
     }
+    // θ1 arc + label
+    ctx.strokeStyle = "rgba(242,168,59,0.8)"; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.arc(Ox, Oy, 56, -Math.PI / 2, -Math.PI / 2 + t1r); ctx.stroke();
     ctx.fillStyle = "#f2a83b";
     ctx.font = '13px "IBM Plex Mono", monospace';
     ctx.fillText(`θ₁=${fmt(S.t1, 1)}°`, Ox - 118, Oy - 56);
@@ -292,26 +330,35 @@ export function PhotoelectricLab({ exp, onBack, initMode }: { exp: Experiment; o
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     const Wc = 960, H = 560;
-    ctx.clearRect(0, 0, Wc, H);
-    if (!ar) {
-      const g = ctx.createLinearGradient(0, 0, 0, H);
-      g.addColorStop(0, "#082229"); g.addColorStop(1, "#0b3038");
-      ctx.fillStyle = g; ctx.fillRect(0, 0, Wc, H);
-    }
-    // evacuated tube
-    ctx.strokeStyle = "rgba(233,246,243,0.35)";
+    physScene(ctx, Wc, H, ar, performance.now() / 1000);
+    // wavelength → visible color for lamp + photons
+    const lamCol = (l: number): [number, number, number] =>
+      l < 450 ? [154, 107, 255] : l < 490 ? [79, 139, 255] : l < 560 ? [79, 224, 107] : l < 590 ? [255, 225, 79] : l < 630 ? [255, 155, 59] : [255, 90, 70];
+    const lc = lamCol(S.lam);
+    // evacuated glass tube with inner glow
+    if (!ar) glow(ctx, 480, 265, 430, lc, 0.05);
+    ctx.fillStyle = "rgba(150,210,230,0.045)";
+    ctx.beginPath(); ctx.roundRect(60, 100, 840, 330, 40); ctx.fill();
+    ctx.strokeStyle = "rgba(214,240,244,0.5)";
     ctx.lineWidth = 3;
     ctx.beginPath(); ctx.roundRect(60, 100, 840, 330, 40); ctx.stroke();
-    // cathode plate
-    ctx.fillStyle = "#8fbcb8";
+    ctx.strokeStyle = "rgba(214,240,244,0.18)"; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.roundRect(70, 110, 820, 310, 34); ctx.stroke();
+    // cathode plate (metallic)
+    const cg = ctx.createLinearGradient(380, 0, 394, 0);
+    cg.addColorStop(0, "#5d8a90"); cg.addColorStop(0.5, "#a8c8c5"); cg.addColorStop(1, "#5d8a90");
+    ctx.fillStyle = cg;
     ctx.fillRect(380, 140, 14, 260);
+    if (!ar && S.electrons.length > 0) glow(ctx, 387, 270, 70, [53, 211, 194], 0.22);
     // anode
-    ctx.fillStyle = "#2a7a80";
+    const ag = ctx.createLinearGradient(810, 0, 822, 0);
+    ag.addColorStop(0, "#16454d"); ag.addColorStop(0.5, "#2a7a80"); ag.addColorStop(1, "#16454d");
+    ctx.fillStyle = ag;
     ctx.fillRect(810, 140, 12, 260);
-    // photons
+    // photons — wavy packets in lamp color with glow heads
     const wv = Math.max(6, 26 - S.lam / 34);
     for (const p of S.photons) {
-      ctx.strokeStyle = "#f2a83b";
+      ctx.strokeStyle = `rgba(${lc[0]},${lc[1]},${lc[2]},0.9)`;
       ctx.lineWidth = 2;
       ctx.beginPath();
       for (let i = 0; i < 24; i++) {
@@ -320,15 +367,21 @@ export function PhotoelectricLab({ exp, onBack, initMode }: { exp: Experiment; o
         if (i === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
       }
       ctx.stroke();
+      if (!ar) glow(ctx, p.x, p.y, 14, lc, 0.4);
     }
-    // electrons
-    ctx.fillStyle = "#35d3c2";
+    // electrons with soft glow
     for (const e of S.electrons) {
+      if (!ar) glow(ctx, e.x, e.y, 16, [53, 211, 194], 0.35);
+      ctx.fillStyle = "#35d3c2";
       ctx.beginPath(); ctx.arc(e.x, e.y, 4.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "rgba(233,246,243,0.9)";
+      ctx.beginPath(); ctx.arc(e.x - 1.2, e.y - 1.2, 1.6, 0, Math.PI * 2); ctx.fill();
     }
-    // light source
-    ctx.fillStyle = "#f2a83b";
+    // light source lamp with wavelength-colored halo
+    if (!ar) glow(ctx, 60, 270, 90, lc, 0.45);
+    ctx.fillStyle = `rgb(${lc[0]},${lc[1]},${lc[2]})`;
     ctx.beginPath(); ctx.arc(60, 270, 26, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.lineWidth = 1.5; ctx.stroke();
     ctx.fillStyle = "#04191d";
     ctx.font = '10px Vazirmatn, sans-serif';
     ctx.textAlign = "center";

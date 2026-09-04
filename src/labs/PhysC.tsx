@@ -3,7 +3,7 @@ import { LiveChart } from "../components/Chart";
 import { LabShell, type FeedItem, type LabMode } from "../components/LabShell";
 import { Slider } from "../components/ui";
 import { fmt, useForce, useRaf } from "../lib/utils";
-import { arrow, bg, hud, FA, MONO, sr } from "./draw";
+import { arrow, physScene as bg, hud, FA, MONO, sr } from "./draw";
 import type { Experiment } from "../data/catalog";
 
 type Props = { exp: Experiment; onBack: () => void; initMode?: LabMode };
