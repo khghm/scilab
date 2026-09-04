@@ -30,6 +30,7 @@ import { AluLab, CpuLab } from "./labs/ArchLabs";
 import { LineFollowerLab, RobotArmLab, ObstacleLab } from "./labs/RoboticsLabs";
 import { BlinkLab, AdcLab, PwmServoLab } from "./labs/ArduinoLabs";
 import { RenalLab, GlucoseLab, ReflexLab, PvLoopLab } from "./labs/MedX";
+import { SpecLab } from "./labs/SpecLab";
 import { LogoMark } from "./components/icons";
 import { faDigits, useNow } from "./lib/utils";
 
@@ -105,6 +106,8 @@ const LABS: Record<LabKind, ComponentType<{ exp: Experiment; onBack: () => void;
   glucose: GlucoseLab,
   reflex: ReflexLab,
   pvloop: PvLoopLab,
+  // parametric engine (84 formula-driven labs)
+  spec: SpecLab,
 };
 
 export default function App() {

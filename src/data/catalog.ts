@@ -8,7 +8,8 @@ export type LabKind =
   | "seriesparallel" | "rcfilter" | "logicgate" | "timer555" | "bjt" | "rlc" | "opamp" | "mosfet" | "wheatstone" | "pwm"
   | "flipflop" | "counter" | "adder" | "alu" | "cpu" | "linefollower" | "robotarm" | "obstacle" | "blink" | "adcpot" | "pwmservo"
   | "kmap" | "pipeline" | "pid" | "arduinoide"
-  | "ecg" | "bloodpressure" | "spirometry" | "spo2" | "renal" | "glucose" | "reflex" | "pvloop";
+  | "ecg" | "bloodpressure" | "spirometry" | "spo2" | "renal" | "glucose" | "reflex" | "pvloop"
+  | "spec";
 
 export interface Experiment {
   id: string;
@@ -245,6 +246,100 @@ export const EXPERIMENTS: Experiment[] = [
   E("m-reflex", "medicine", "reflex", "زمان واکنش عصبی", "نوروفیزیولوژی",
     "اندازه‌گیری تعاملی زمان واکنش با محرک تصادفی؛ آمار میانگین و SD تلاش‌ها.",
     ["HS-LS1-2"], "IB DP Biology 6.6", "AQA Biology 3.6.5.2", 1, 20),
+
+  // ================= PHYSICS — parametric wave (15) =================
+  E("p-kepler", "physics", "spec", "قوانین کپلر و مدار سیارات", "مکانیک سماوی", "رابطه T²∝a³؛ محاسبه دوره مداری و سرعت سیارات در شعاع‌های مختلف.", ["HS-PS2-4"], "IB DP Physics 6.1", "AQA 3.6.1.4", 2, 20),
+  E("p-escape", "physics", "spec", "سرعت فرار سیاره", "مکانیک و گرانش", "محاسبه سرعت فرار با √(2GM/R) برای جرم‌ها و شعاع‌های دلخواه.", ["HS-PS2-4"], "IB DP Physics 6.1", "AQA 3.6.1.4", 2, 20),
+  E("p-torque", "physics", "spec", "گشتاور و تعادل اهرم", "استاتیک", "گشتاور F·r·sinθ و محاسبه نیروی لازم برای تعادل اهرم.", ["HS-PS2-1"], "IB DP Physics 2.2", "AQA 3.1.3", 1, 20),
+  E("p-centripetal", "physics", "spec", "نیروی مرکزگرا", "حرکت دایره‌ای", "نیروی mv²/r و شتاب مرکزگرا؛ ارتباط با دوره و فرکانس چرخش.", ["HS-PS2-1"], "IB DP Physics 6.1", "AQA 3.1.3", 2, 20),
+  E("p-buoyancy", "physics", "spec", "شناوری و اصل ارشمیدس", "استاتیک سیالات", "نیروی شناوری و کسر غوطه‌وری جسم بر اساس چگالی‌ها.", ["HS-PS2-2"], "IB DP Physics 3.2", "AQA 3.2.2", 1, 20),
+  E("p-entropy", "physics", "spec", "آنتروپی و ریزحالت‌ها", "ترمودینامیک آماری", "S=k·lnΩ برای جسم اینشتین؛ شمارش ریزحالت‌ها و تعریف دما.", ["HS-PS3-4"], "IB DP Physics B.1", "AQA 3.6.2.4", 3, 25),
+  E("p-blackbody", "physics", "spec", "تابش جسم سیاه و قانون وین", "فیزیک کوانتوم", "منحنی پلانک و جابه‌جایی λmax با دما؛ توان ∝T⁴.", ["HS-PS4-3"], "IB DP Physics 4.6", "AQA 3.8.2.1", 3, 25),
+  E("p-compton", "physics", "spec", "پراکندگی کمتون", "فیزیک کوانتوم", "تغییر طول‌موج فوتون بر اثر برخورد با الکترون؛ λc=2.426pm.", ["HS-PS4-3"], "IB DP Physics B.1", "AQA 3.8.2.2", 3, 25),
+  E("p-bohr", "physics", "spec", "مدل بور و سری بالمر", "فیزیک اتمی", "ترازهای انرژی هیدروژن و طول‌موج خطوط طیفی گذارها.", ["HS-PS4-3"], "IB DP Physics B.2", "AQA 3.8.1.2", 3, 25),
+  E("p-lens", "physics", "spec", "عدسی نازک و بزرگ‌نمایی", "اپتیک هندسی", "معادله عدسی و تصویر حقیقی/مجازی؛ بزرگ‌نمایی و توان دیوپتری.", ["HS-PS4-2"], "IB DP Physics 4.3", "AQA 3.7.3.2", 2, 20),
+  E("p-diffraction", "physics", "spec", "پراش تک‌شکاف", "اپتیک فیزیکی", "الگوی پراش و پهنای نوار مرکزی؛ رابطه θ₁=λ/a.", ["HS-PS4-2"], "IB DP Physics 4.4", "AQA 3.7.4.4", 3, 25),
+  E("p-magnetic", "physics", "spec", "حرکت بار در میدان مغناطیسی", "الکترومغناطیس", "شعاع مسیر و فرکانس سیکلوترون الکترون در میدان B.", ["HS-PS2-5"], "IB DP Physics 5.4", "AQA 3.6.3.4", 3, 25),
+  E("p-relmom", "physics", "spec", "انرژی جنبشی نسبیتی", "نسبیت خاص", "مقایسه انرژی کلاسیک و نسبیتی؛ ضریب لورنتس و تکانه.", ["HS-PS2-1"], "IB DP Physics A.5", "AQA Enrichment", 3, 25),
+  E("p-capacitor", "physics", "spec", "خازن تخت و انرژی ذخیره", "الکترومغناطیس", "ظرفیت ε₀A/d، میدان الکتریکی و انرژی ½CV².", ["HS-PS2-5"], "IB DP Physics 5.3", "AQA 3.6.4.1", 2, 20),
+  E("p-gravfield", "physics", "spec", "میدان گرانشی با ارتفاع", "گرانش", "افت g با ارتفاع؛ قانون عکس مربع و بی‌وزنی در مدار.", ["HS-PS2-4"], "IB DP Physics 6.1", "AQA 3.6.1.4", 2, 20),
+
+  // ================= CHEMISTRY — parametric wave (21) =================
+  E("c-gaslaw", "chemistry", "spec", "قانون گازهای ایده‌آل و همدماها", "شیمی فیزیک", "منحنی‌های PV=nRT برای دماها و مول‌های مختلف.", ["HS-PS1-3"], "IB DP Chemistry 1.3", "AQA 3.1.10.1", 1, 20),
+  E("c-beer", "chemistry", "spec", "قانون بیر–لامبرت", "شیمی تجزیه", "جذب نوری A=εlc و منحنی کالیبراسیون؛ درصد عبور.", ["HS-PS1-2"], "IB DP Chemistry 11.2", "AQA 3.1.14.1", 2, 20),
+  E("c-vanthoff", "chemistry", "spec", "معادله وانت‌هوف", "شیمی فیزیک", "وابستگی ثابت تعادل به دما؛ تعیین ΔH از شیب lnK بر 1/T.", ["HS-PS1-6"], "IB DP Chemistry 7.1", "AQA 3.1.12.3", 3, 25),
+  E("c-hydrolysis", "chemistry", "spec", "هیدرولیز نمک و pH", "شیمی تجزیه", "pH محلول نمک‌های اسیدی و درصد هیدرولیز بر اساس غلظت.", ["HS-PS1-1"], "IB DP Chemistry 8.3", "AQA 3.1.12.2", 2, 20),
+  E("c-nernst", "chemistry", "spec", "معادله نرنست", "الکتروشیمی", "پتانسیل سلول بر اساس خارج‌قسمت واکنش Q؛ باتری دانیل.", ["HS-PS1-7"], "IB DP Chemistry 9.2", "AQA 3.1.11.2", 3, 25),
+  E("c-order", "chemistry", "spec", "سینتیک و مرتبه واکنش", "شیمی فیزیک", "مقایسه منحنی‌های مرتبه صفر، یک و دو؛ نیمه‌عمر.", ["HS-PS1-5"], "IB DP Chemistry 6.1", "AQA 3.1.12.4", 2, 25),
+  E("c-collision", "chemistry", "spec", "نظریه برخورد و بولتزمن", "شیمی فیزیک", "کسر مولکول‌های پرانرژی e^(−Ea/RT) و اثر کاتالیزور.", ["HS-PS1-5"], "IB DP Chemistry 6.2", "AQA 3.1.12.4", 2, 25),
+  E("c-gibbs", "chemistry", "spec", "انرژی آزاد گیبس", "ترمودینامیک شیمیایی", "ΔG=ΔH−TΔS؛ پیش‌بینی خودبه‌خودی‌بودن در دماهای مختلف.", ["HS-PS1-6"], "IB DP Chemistry 5.2", "AQA 3.1.9.3", 3, 25),
+  E("c-clapeyron", "chemistry", "spec", "کلازیوس–کلاپیرون", "شیمی فیزیک", "فشار بخار و ΔH تبخیر از شیب lnP بر 1/T؛ آب و اتر.", ["HS-PS1-3"], "IB DP Chemistry 5.1", "AQA 3.1.9.2", 3, 25),
+  E("c-raoult", "chemistry", "spec", "قانون رائول", "محلول‌ها", "فشار بخار محلول دوتایی و ترکیب بخار؛ بنزن و تولوئن.", ["HS-PS1-3"], "IB DP Chemistry 5.3", "AQA 3.1.10.2", 2, 20),
+  E("c-colligative", "chemistry", "spec", "خواص کولیگاتیو", "محلول‌ها", "افزایش نقطه جوش و کاهش انجماد ΔT=i·K·m با ضریب وانت‌هوف.", ["HS-PS1-3"], "IB DP Chemistry 5.3", "AQA 3.1.10.2", 2, 20),
+  E("c-osmosis", "chemistry", "spec", "فشار اسمزی", "محلول‌ها", "π=iMRT و ستون آب معادل؛ غلظت فیزیولوژیک سرم.", ["HS-PS1-3"], "IB DP Chemistry 5.3", "AQA 3.1.10.2", 2, 20),
+  E("c-phdilution", "chemistry", "spec", "رقت‌سازی و pH", "شیمی تجزیه", "تغییر pH اسید قوی با رقت؛ نقش یونش آب در رقت‌های زیاد.", ["HS-PS1-1"], "IB DP Chemistry 8.1", "AQA 3.1.12.1", 1, 20),
+  E("c-redoxtable", "chemistry", "spec", "ردیف الکتروشیمیایی", "الکتروشیمی", "پتانسیل استاندارد نیم‌سلول‌ها و پیش‌بینی واکنش‌های خودبه‌خودی.", ["HS-PS1-7"], "IB DP Chemistry 9.1", "AQA 3.1.11.1", 2, 20),
+  E("c-complex", "chemistry", "spec", "کمپلکس‌سازی و Kf", "شیمی معدنی", "منحنی اشباع کمپلکس و Kf؛ EDTA و یون‌های فلزی.", ["HS-PS2-6"], "IB DP Chemistry 13.2", "AQA 3.2.4", 3, 25),
+  E("c-bondenergy", "chemistry", "spec", "انرژی پیوند و ΔH", "شیمی آلی", "محاسبه آنتالپی واکنش از انرژی پیوندهای شکسته و تشکیل‌شده.", ["HS-PS1-4"], "IB DP Chemistry 5.1", "AQA 3.1.9.1", 2, 20),
+  E("c-uvvis", "chemistry", "spec", "طیف UV-Vis و مزدوج‌بودن", "شیمی آلی", "وابستگی λmax به طول مزدوج؛ رنگ کاروتنوئیدها و لیکوپن.", ["HS-PS4-3"], "IB DP Chemistry 11.2", "AQA 3.7.13.2", 3, 25),
+  E("c-tlc", "chemistry", "spec", "کروماتوگرافی لایه‌نازک", "شیمی تجزیه", "مقادیر Rf مواد بر اساس قطبیت فاز متحرک و جداسازی.", ["HS-PS2-6"], "IB DP Chemistry 11.2", "AQA 3.1.14.2", 1, 20),
+  E("c-faraday", "chemistry", "spec", "قوانین فارادی", "الکتروشیمی", "جرم رسوب الکترولیزی m=(M·I·t)/(z·F)؛ آبکاری مس.", ["HS-PS1-7"], "IB DP Chemistry 9.3", "AQA 3.1.11.3", 2, 20),
+  E("c-lattice", "chemistry", "spec", "انرژی شبکه بلورین", "شیمی معدنی", "وابستگی U به بار یون‌ها و فاصله؛ مقایسه NaCl و MgO.", ["HS-PS2-6"], "IB DP Chemistry 4.4", "AQA 3.1.9.1", 3, 25),
+  E("c-ratelaw", "chemistry", "spec", "قانون سرعت و روش اولیه", "شیمی فیزیک", "تعیین مرتبه از نمودار لگاریتمی log(rate) بر log[A].", ["HS-PS1-5"], "IB DP Chemistry 6.1", "AQA 3.1.12.4", 3, 25),
+
+  // ================= BIOLOGY — parametric wave (21) =================
+  E("b-fick", "biology", "spec", "قانون فیک انتشار", "فیزیولوژی غشا", "شار انتشار J=D·A·ΔC/Δx؛ اثر ضخامت و مساحت غشا.", ["HS-LS1-2"], "IB DP Biology 1.4", "AQA Biology 3.2.1", 2, 20),
+  E("b-osmocell", "biology", "spec", "اسمز و تونیسیتی", "فیزیولوژی سلول", "تغییر حجم سلول در محیط‌های هیپوتونیک و هیپرتونیک.", ["HS-LS1-2"], "IB DP Biology 1.4", "AQA Biology 3.2.1", 1, 20),
+  E("b-lightresp", "biology", "spec", "منحنی پاسخ نوری", "فیزیولوژی گیاهی", "فتوسنتز خالص بر حسب نور؛ نقطه جبران و اشباع.", ["HS-LS1-5"], "IB DP Biology 8.2", "AQA Biology 3.5.3", 2, 25),
+  E("b-rq", "biology", "spec", "خارج‌قسمت تنفسی RQ", "متابولیسم", "RQ=CO₂/O₂ برای کربوهیدرات، لیپید و پروتئین.", ["HS-LS1-7"], "IB DP Biology 8.1", "AQA Biology 3.5.2", 2, 20),
+  E("b-popgrowth", "biology", "spec", "رشد لجستیک جمعیت", "اکولوژی", "منحنی لجستیک و ظرفیت برد؛ نرخ رشد و نقطه K/2.", ["HS-LS2-1"], "IB DP Biology 4.1", "AQA Biology 3.7.4.5", 2, 25),
+  E("b-survivorship", "biology", "spec", "منحنی بقا", "اکولوژی", "انواع منحنی بقا I تا III و استراتژی‌های زندگی.", ["HS-LS2-6"], "IB DP Biology 4.1", "AQA Biology 3.7.4.5", 2, 20),
+  E("b-chisquare", "biology", "spec", "آزمون خی‌دو مندلی", "ژنتیک", "آزمون انطباق نسبت ۹:۳:۳:۱ با داده‌های مشاهده‌شده.", ["HS-LS3-3"], "IB DP Biology A.4", "AQA Biology 3.7.3", 2, 25),
+  E("b-linkage", "biology", "spec", "پیوستگی ژنی و نقشه", "ژنتیک", "فرکانس نوترکیبی و واحد سانتی‌مورگان؛ تابع هالدین.", ["HS-LS3-2"], "IB DP Biology 10.1", "AQA Biology 3.7.3", 3, 25),
+  E("b-proteindenat", "biology", "spec", "دناتوراسیون آنزیم", "بیوشیمی", "فعالیت آنزیم بر حسب دما؛ بهینه و دناتوراسیون حرارتی.", ["HS-LS1-2"], "IB DP Biology 8.1", "AQA Biology 3.6.2", 2, 20),
+  E("b-inhibitor", "biology", "spec", "مهار رقابتی و غیررقابتی", "بیوشیمی", "نمودار لاینویور–بورک با مهارکننده؛ تغییر Km و Vmax.", ["HS-LS1-2"], "IB DP Biology 8.1", "AQA Biology 3.6.2", 3, 25),
+  E("b-dnamelt", "biology", "spec", "دمای ذوب DNA", "زیست مولکولی", "وابستگی Tm به درصد GC؛ پایداری پیوندهای هیدروژنی.", ["HS-LS3-1"], "IB DP Biology 7.1", "AQA Biology 3.1.5.1", 2, 20),
+  E("b-gentime", "biology", "spec", "زمان نسل باکتری", "میکروبیولوژی", "رشد لگاریتمی N=N₀·2^(t/g)؛ E.coli و زمان نسل.", ["HS-LS1-2"], "IB DP Biology 11.2", "AQA Biology 3.2.6", 1, 20),
+  E("b-competition", "biology", "spec", "رقابت بین‌گونه‌ای", "اکولوژی", "ایزوکلاین‌های رقابت لوتکا؛ حذف رقابتی گاوس.", ["HS-LS2-6"], "IB DP Biology 4.1", "AQA Biology 3.7.4.5", 3, 25),
+  E("b-energypyramid", "biology", "spec", "هرم انرژی و قاعده ۱۰٪", "اکولوژی", "انتقال انرژی بین سطوح غذایی؛ افت ۹۰٪ در هر سطح.", ["HS-LS2-4"], "IB DP Biology 4.2", "AQA Biology 3.7.4.4", 1, 20),
+  E("b-shannon", "biology", "spec", "شاخص تنوع شانون", "اکولوژی", "تنوع گونه‌ای H′=−Σpᵢ·lnpᵢ؛ یکنواختی و پایش سلامت.", ["HS-LS2-6"], "IB DP Biology 4.1", "AQA Biology 3.7.4.5", 2, 20),
+  E("b-markrecapture", "biology", "spec", "برآورد لینکلن–پترسن", "اکولوژی", "تخمین جمعیت N=M·C/R با نشان‌گذاری و بازگیری.", ["HS-LS2-6"], "IB DP Biology 4.1", "AQA Biology 3.7.4.5", 2, 20),
+  E("b-stomata", "biology", "spec", "روزنه و تعرق", "فیزیولوژی گیاهی", "هدایت روزنه‌ای بر حسب نور، CO₂ و خشکی هوا.", ["HS-LS1-5"], "IB DP Biology 9.2", "AQA Biology 3.5.3", 2, 25),
+  E("b-photoperiod", "biology", "spec", "فتوپریودیسم و گلدهی", "فیزیولوژی گیاهی", "پاسخ گلدهی گیاهان روزبلند و روزکوتاه به طول روز.", ["HS-LS1-5"], "IB DP Biology 9.3", "AQA Biology 3.5.3", 2, 20),
+  E("b-lengthtension", "biology", "spec", "رابطه کشش–طول عضله", "فیزیولوژی", "کشش سارکومر بر حسب طول؛ هم‌پوشانی اکتین و میوزین.", ["HS-LS1-2"], "IB DP Biology 11.2", "AQA Biology 3.6.4", 2, 20),
+  E("b-nitrogen", "biology", "spec", "چرخه نیتروژن", "اکولوژی", "تعادل دینامیک تثبیت و دنیتریفیکاسیون نیتروژن خاک.", ["HS-LS2-4"], "IB DP Biology 4.2", "AQA Biology 3.7.4.4", 2, 20),
+  E("b-plaque", "biology", "spec", "تیتر فاژ (PFU)", "میکروبیولوژی", "شمارش پلاک و محاسبه تیتر باکتریوفاژ در رقت‌های مختلف.", ["HS-LS1-2"], "IB DP Biology 11.2", "AQA Biology 3.2.6", 2, 20),
+
+  // ================= ELECTRONICS — parametric wave (5) =================
+  E("e-diodeiv", "electronics", "spec", "مشخصه I-V دیود", "نیمه‌هادی", "معادله شاکلی و زانوی ۰٫۷ ولت؛ اثر دما و ضریب ایده‌آلی.", ["HS-PS2-5"], "IB DP Physics 5.4", "AQA Enrichment", 2, 25),
+  E("e-thevenin", "electronics", "spec", "معادل تونن و توان ماکزیمم", "مدار DC", "محاسبه Vth و Rth؛ انتقال توان بیشینه در RL=Rth.", ["HS-PS2-5"], "IB DP Physics 5.2", "AQA Enrichment", 2, 25),
+  E("e-transformer", "electronics", "spec", "ترانسفورماتور", "مدار AC", "تبدیل ولتاژ و جریان با نسبت دور؛ انتقال امپدانس n².", ["HS-PS2-5"], "IB DP Physics 5.2", "AQA 3.6.4.5", 2, 20),
+  E("e-filterorder", "electronics", "spec", "مرتبه فیلتر", "سیگنال", "شیب توقف ۲۰n dB/دهه؛ مقایسه مراتب فیلتر پایین‌گذر.", ["HS-PS4-5"], "IB DP Physics 4.5", "AQA Enrichment", 2, 25),
+  E("e-impedance", "electronics", "spec", "امپدانس و تشدید RLC", "مدار AC", "امپدانس Z(f) و فرکانس تشدید؛ ضریب کیفیت و پهنای باند.", ["HS-PS4-1"], "IB DP Physics 4.6", "AQA 3.6.4.2", 3, 25),
+
+  // ================= MEDICINE — parametric wave (22) =================
+  E("m-cardiacoutput", "medicine", "spec", "برون‌ده قلبی و اصل فیک", "قلب و عروق", "CO=HR×SV؛ شاخص قلبی و کنترل برون‌ده.", ["HS-LS1-2"], "IB DP Biology 6.1", "AQA Biology 3.6.4.4", 2, 20),
+  E("m-starling", "medicine", "spec", "قانون فرانک–استارلینگ", "قلب و عروق", "حجم ضربه‌ای بر حسب پیش‌بار؛ انقباض‌پذیری و نارسایی.", ["HS-LS1-2"], "IB DP Biology 6.1", "AQA Biology 3.6.4.4", 3, 25),
+  E("m-intervals", "medicine", "spec", "فاصله‌های ECG و QTc", "قلب و عروق", "اصلاح بازت QTc=QT/√RR؛ مرز خطر آریتمی.", ["HS-LS1-2"], "IB DP Biology 6.1", "AQA Biology 3.6.4.4", 3, 25),
+  E("m-ventilation", "medicine", "spec", "تهویه آلوئولی", "تنفس", "V̇A=(VT−VD)×f و فضای مرده؛ تنفس کم‌عمق.", ["HS-LS1-2"], "IB DP Biology 6.2", "AQA Biology 3.6.4.2", 2, 25),
+  E("m-aagradient", "medicine", "spec", "گرادیان A-a", "تنفس", "محاسبه PAO₂ و گرادیان آلوئولی-شریانی؛ افتراق هیپوکسمی.", ["HS-LS1-2"], "IB DP Biology 6.2", "AQA Biology 3.6.4.2", 3, 25),
+  E("m-compliance", "medicine", "spec", "انعطاف‌پذیری ریه", "تنفس", "منحنی فشار-حجم ریه؛ فیبروز و آمفیزم.", ["HS-LS1-2"], "IB DP Biology 6.2", "AQA Biology 3.6.4.2", 3, 25),
+  E("m-acidbase", "medicine", "spec", "تعادل اسید و باز", "کلیه و اسیدوباز", "معادله هندرسون–هاسل‌بالخ؛ تشخیص اسیدوز و آلکالوز.", ["HS-LS1-2"], "IB DP Biology 6.5", "AQA Biology 3.6.4.6", 3, 25),
+  E("m-aniongap", "medicine", "spec", "شکاف آنیونی", "کلیه و اسیدوباز", "AG=Na−(Cl+HCO₃)؛ افتراق اسیدوز متابولیک.", ["HS-LS1-2"], "IB DP Biology 6.5", "AQA Biology 3.6.4.6", 2, 20),
+  E("m-creatinine", "medicine", "spec", "کلیرانس کراتینین", "کلیه و اسیدوباز", "فرمول کوکرافت–گالت؛ مراحل بیماری مزمن کلیه.", ["HS-LS1-2"], "IB DP Biology 6.5", "AQA Biology 3.6.4.6", 2, 20),
+  E("m-osmolarity", "medicine", "spec", "اسمولاریته سرم", "کلیه و اسیدوباز", "Osm=2Na+Glu/18+BUN/2.8؛ هیپوناترمی و گپ اسمولار.", ["HS-LS1-2"], "IB DP Biology 6.5", "AQA Biology 3.6.4.6", 2, 20),
+  E("m-hba1c", "medicine", "spec", "هموگلوبین A1c", "غدد و متابولیسم", "تبدیل HbA1c به میانگین قند؛ طبقه‌بندی دیابت.", ["HS-LS1-2"], "IB DP Biology 6.4", "AQA Biology 3.6.4.1", 1, 20),
+  E("m-bmibmr", "medicine", "spec", "BMI و متابولیسم پایه", "غدد و متابولیسم", "شاخص توده بدنی و فرمول میفلین–سنت‌ژور برای BMR.", ["HS-LS1-2"], "IB DP Biology 6.4", "AQA Biology 3.6.4.1", 1, 20),
+  E("m-pharmacokinetics", "medicine", "spec", "فارماکوکینتیک حذف", "داروسازی", "حذف مرتبه اول C=C₀e^(−kt)؛ نیمه‌عمر و فاصله دوز.", ["HS-LS1-2"], "IB DP Biology 6.4", "AQA Enrichment", 2, 25),
+  E("m-ivdrip", "medicine", "spec", "تزریق وریدی و Css", "داروسازی", "غلظت پایدار Css=R₀/CL؛ زمان رسیدن و دوز بارگیری.", ["HS-LS1-2"], "IB DP Biology 6.4", "AQA Enrichment", 3, 25),
+  E("m-eeg", "medicine", "spec", "باندهای فرکانسی EEG", "مغز و اعصاب", "طیف امواج مغزی از دلتا تا بتا؛ حالت‌های خواب و بیداری.", ["HS-LS1-2"], "IB DP Biology 6.6", "AQA Enrichment", 3, 25),
+  E("m-audiometry", "medicine", "spec", "ادیوگرام شنوایی", "حس و ادراک", "آستانه شنوایی بر حسب فرکانس؛ پیرگوشی و آسیب نویزی.", ["HS-LS1-2"], "IB DP Biology 6.6", "AQA Enrichment", 2, 20),
+  E("m-vision", "medicine", "spec", "تطابق عدسی و پیرچشمی", "حس و ادراک", "قدرت تطابق بر حسب سن؛ نزدیک‌ترین نقطه دید.", ["HS-LS1-2"], "IB DP Biology 6.6", "AQA Enrichment", 2, 20),
+  E("m-gastric", "medicine", "spec", "تخلیه معده", "گوارش", "تخلیه نمایی محتویات معده؛ اثر وعده چرب.", ["HS-LS1-2"], "IB DP Biology 6.3", "AQA Biology 3.6.3", 1, 20),
+  E("m-lipid", "medicine", "spec", "پروفایل لیپید", "غدد و متابولیسم", "فرمول فریدوالد LDL=TC−HDL−TG/5؛ طبقه‌بندی خطر.", ["HS-LS1-2"], "IB DP Biology 6.4", "AQA Biology 3.6.4.1", 1, 20),
+  E("m-inr", "medicine", "spec", "پایش INR", "هماتولوژی", "INR=(PT/نرمال)^ISI؛ پنجره درمانی وارفارین.", ["HS-LS1-2"], "IB DP Biology 6.1", "AQA Enrichment", 2, 20),
+  E("m-heatbalance", "medicine", "spec", "تعادل حرارتی بدن", "فیزیولوژی محیطی", "ذخیره حرارت S=M−(E+R+C)؛ منطقه آسایش.", ["HS-LS1-2"], "IB DP Biology 6.4", "AQA Enrichment", 2, 20),
+  E("m-vo2max", "medicine", "spec", "VO₂max و آزمون کوپر", "ورزش و سلامت", "برآورد مصرف بیشینه اکسیژن از مسافت دو ۱۲ دقیقه.", ["HS-LS1-2"], "IB DP Biology 6.1", "AQA Enrichment", 1, 20),
 ];
 
 export const liveExperiments = () => EXPERIMENTS.filter((e) => e.lab);
