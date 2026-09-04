@@ -57,15 +57,25 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>() {
   const [inView, setInView] = useState(false);
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el) { setInView(true); return; }
+    // Fallback: never leave content hidden if the observer API is unavailable.
+    if (typeof IntersectionObserver === "undefined") { setInView(true); return; }
+    // Synchronous check so already-visible content shows immediately.
+    const r = el.getBoundingClientRect();
+    if (r.top < (window.innerHeight || document.documentElement.clientHeight) && r.bottom > 0) {
+      setInView(true);
+      return;
+    }
     const io = new IntersectionObserver(
       ([e]) => {
         if (e.isIntersecting) { setInView(true); io.disconnect(); }
       },
-      { threshold: 0.12 }
+      { threshold: 0.05, rootMargin: "0px 0px 240px 0px" }
     );
     io.observe(el);
-    return () => io.disconnect();
+    // Safety net: force visibility after a short delay regardless.
+    const t = window.setTimeout(() => { setInView(true); io.disconnect(); }, 1600);
+    return () => { io.disconnect(); window.clearTimeout(t); };
   }, []);
   return { ref, inView };
 }
