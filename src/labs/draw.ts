@@ -261,3 +261,78 @@ export function trail(ctx: CanvasRenderingContext2D, pts: { x: number; y: number
   }
   ctx.globalAlpha = 1;
 }
+
+/* ============ medicine scene — patient-monitor clinical ambience ============ */
+export function medScene(ctx: CanvasRenderingContext2D, W: number, H: number, ar: boolean, t = performance.now() / 1000) {
+  ctx.clearRect(0, 0, W, H);
+  if (ar) return;
+  // deep clinical charcoal with a faint teal cast
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, "#0a1416");
+  g.addColorStop(0.55, "#0c1a1d");
+  g.addColorStop(1, "#101f22");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  // ambient glows — coral (vital-signs) and teal (clinical)
+  glow(ctx, W * 0.1, H * 0.06, 360, [255, 111, 97], 0.08);
+  glow(ctx, W * 0.92, H * 0.96, 340, [53, 211, 194], 0.06);
+  glow(ctx, W * 0.5, H * 0.5, 420, [86, 184, 255], 0.03);
+
+  // ECG monitor grid — fine 8px lines with brighter 40px majors
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= W; x += 8) {
+    ctx.strokeStyle = x % 40 === 0 ? "rgba(255,111,97,0.10)" : "rgba(255,111,97,0.04)";
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y <= H; y += 8) {
+    ctx.strokeStyle = y % 40 === 0 ? "rgba(255,111,97,0.10)" : "rgba(255,111,97,0.04)";
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // a faint baseline ECG trace sweeping across the backdrop
+  const beat = (x: number) => {
+    // stylised P-QRS-T bump centred on x=0 with width ~90px
+    const p = (cx: number, w: number, h: number) => h * Math.exp(-((x - cx) ** 2) / (2 * w * w));
+    return p(-34, 9, 7) - p(-8, 3, 4) + p(0, 4, 34) - p(8, 3, 9) + p(26, 12, 10);
+  };
+  const sweep = (t * 70) % (W + 400);
+  ctx.lineWidth = 1.6;
+  for (let pass = 0; pass < 2; pass++) {
+    const yy = 150 + pass * 260;
+    ctx.strokeStyle = `rgba(255,111,97,${pass === 0 ? 0.10 : 0.07})`;
+    ctx.beginPath();
+    for (let x = -200; x <= W + 200; x += 6) {
+      const rel = x - sweep;
+      const y = yy - beat(rel % 320) * 0.9;
+      if (x === -200) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  // heartbeat pulse marker travelling on the top trace
+  const hx = ((t * 70) % (W + 400)) - 200;
+  glow(ctx, hx, 150 - beat(0) * 0.9, 26, [255, 111, 97], 0.25);
+}
+
+/** rounded monitor-style panel bezel with a coral accent notch */
+export function monitor(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, ar: boolean, accent = "#ff6f61") {
+  rr(ctx, x, y, w, h, 12);
+  ctx.fillStyle = ar ? "rgba(6,16,18,0.6)" : "rgba(6,16,18,0.82)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(42,122,128,0.9)";
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
+  // accent notch top-left
+  ctx.fillStyle = accent;
+  ctx.beginPath(); ctx.roundRect(x + 10, y - 3, 46, 6, 3); ctx.fill();
+}
+
+/** medical cross badge */
+export function medCross(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, color: string) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.roundRect(x - s * 0.18, y - s * 0.55, s * 0.36, s * 1.1, s * 0.08);
+  ctx.roundRect(x - s * 0.55, y - s * 0.18, s * 1.1, s * 0.36, s * 0.08);
+  ctx.fill();
+}

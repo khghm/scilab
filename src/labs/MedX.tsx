@@ -3,7 +3,7 @@ import { LiveChart } from "../components/Chart";
 import { LabShell, type FeedItem, type LabMode } from "../components/LabShell";
 import { Slider } from "../components/ui";
 import { faDigits, fmt, useForce, useRaf } from "../lib/utils";
-import { bg, hud, FA, MONO, rr, sr } from "./draw";
+import { medScene as bg, glow, monitor, hud, FA, MONO, rr, sr } from "./draw";
 import type { Experiment } from "../data/catalog";
 
 type Props = { exp: Experiment; onBack: () => void; initMode?: LabMode };
@@ -25,8 +25,14 @@ export function RenalLab({ exp, onBack, initMode }: Props) {
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     bg(ctx, 960, 560, mode === "ar");
+    if (mode !== "ar") {
+      glow(ctx, 300, 250, 130, [242, 168, 59], 0.12);
+      glow(ctx, 300, 250, 70, [255, 200, 120], 0.10 + 0.06 * Math.sin(S.tv * 3));
+    }
     ctx.strokeStyle = "#f2a83b"; ctx.lineWidth = 14;
+    if (mode !== "ar") { ctx.shadowColor = "#f2a83b"; ctx.shadowBlur = 10; }
     ctx.beginPath(); ctx.arc(300, 250, 90, Math.PI * 0.5, Math.PI * 2.5); ctx.stroke();
+    ctx.shadowBlur = 0;
     ctx.strokeStyle = "#56b8ff"; ctx.lineWidth = 8;
     ctx.beginPath(); ctx.moveTo(300, 340); ctx.lineTo(300, 430); ctx.quadraticCurveTo(300, 470, 340, 470); ctx.lineTo(430, 470); ctx.stroke();
     ctx.fillStyle = "#e9f6f3"; ctx.font = `12px ${FA}`;
@@ -122,9 +128,15 @@ export function GlucoseLab({ exp, onBack, initMode }: Props) {
     const Yg = (g: number) => gy + gh - ((g - 50) / 180) * gh;
     const Yi = (i: number) => gy + gh - (i / 60) * gh;
     ctx.strokeStyle = "#f2a83b"; ctx.lineWidth = 2.5;
+    if (mode !== "ar") { ctx.shadowColor = "#f2a83b"; ctx.shadowBlur = 8; }
     ctx.beginPath();
     vis.forEach((p, idx) => (idx === 0 ? ctx.moveTo(gx + ((p.x - t0) / 60) * gw, Yg(p.y)) : ctx.lineTo(gx + ((p.x - t0) / 60) * gw, Yg(p.y))));
     ctx.stroke();
+    ctx.shadowBlur = 0;
+    if (vis.length) {
+      const lastG = vis[vis.length - 1];
+      if (mode !== "ar") glow(ctx, gx + ((lastG.x - t0) / 60) * gw, Yg(lastG.y), 22, [242, 168, 59], 0.4);
+    }
     ctx.strokeStyle = "#35d3c2"; ctx.lineWidth = 1.8;
     ctx.beginPath();
     vis.forEach((p, idx) => (idx === 0 ? ctx.moveTo(gx + ((p.x - t0) / 60) * gw, Yi(p.i)) : ctx.lineTo(gx + ((p.x - t0) / 60) * gw, Yi(p.i))));
@@ -135,7 +147,7 @@ export function GlucoseLab({ exp, onBack, initMode }: Props) {
     ctx.fillStyle = "#ff6f61"; ctx.font = `10px ${FA}`; ctx.fillText("آستانه کلیوی ۱۸۰", gx + gw - 110, Yg(180) - 6);
     ctx.fillStyle = "#f2a83b"; ctx.fillText("گلوکز", gx + 10, gy + 20);
     ctx.fillStyle = "#35d3c2"; ctx.fillText("انسولین", gx + 70, gy + 20);
-    hud(ctx, 620, 120, 290, 230, mode === "ar");
+    monitor(ctx, 620, 120, 290, 230, mode === "ar", "#f2a83b");
     ctx.font = `13px ${MONO}`;
     ctx.fillStyle = "#f2a83b"; ctx.fillText(`گلوکز = ${fmt(S.G, 0)} mg/dL`, 640, 150);
     ctx.fillStyle = "#35d3c2"; ctx.fillText(`انسولین = ${fmt(S.I, 1)} µU/mL`, 640, 178);
@@ -222,16 +234,33 @@ export function ReflexLab({ exp, onBack, initMode }: Props) {
     if (!cv || !ctx) return;
     bg(ctx, 960, 560, mode === "ar");
     const col = S.state === "go" ? "#a5d95c" : S.state === "wait" ? "#ff6f61" : S.state === "early" ? "#f2a83b" : S.state === "done" ? "#35d3c2" : "#2a7a80";
+    if (mode !== "ar" && S.state === "go") glow(ctx, 480, 250, 320, [165, 217, 92], 0.20);
+    if (mode !== "ar" && S.state === "wait") glow(ctx, 480, 250, 260, [255, 111, 97], 0.10);
     ctx.fillStyle = `${col}22`; ctx.strokeStyle = col; ctx.lineWidth = 4;
+    if (mode !== "ar") { ctx.shadowColor = col; ctx.shadowBlur = 16; }
     rr(ctx, 180, 100, 600, 300, 20); ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
     ctx.textAlign = "center"; ctx.font = `700 34px ${FA}`;
     ctx.fillStyle = col;
     const msg = S.state === "go" ? "حالا کلیک کن!" : S.state === "wait" ? "صبر کن..." : S.state === "early" ? "خیلی زود بود!" : S.state === "done" ? `${fmt(S.times[S.times.length - 1], 0)} میلی‌ثانیه` : "دکمه اجرا را بزن";
     ctx.fillText(msg, 480, 240);
     ctx.font = `13px ${FA}`; ctx.fillStyle = "#8fbcb8";
     ctx.fillText("گیرنده → عصب حسی → CNS → عصب حرکتی → ماهیچه", 480, 290);
+    // traveling nerve impulse dots along the reflex arc
+    if (S.state === "go" || S.state === "done") {
+      const tt = performance.now() / 1000;
+      for (let i = 0; i < 5; i++) {
+        const u = ((tt * 1.4 + i / 5) % 1);
+        const nx = 200 + u * 560;
+        if (mode !== "ar") glow(ctx, nx, 320, 12, [53, 211, 194], 0.5);
+        ctx.fillStyle = "#35d3c2";
+        ctx.beginPath(); ctx.arc(nx, 320, 3.4, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.strokeStyle = "rgba(53,211,194,0.3)"; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(200, 320); ctx.lineTo(760, 320); ctx.stroke();
+    }
     ctx.textAlign = "left";
-    hud(ctx, 240, 430, 480, 70, mode === "ar");
+    monitor(ctx, 240, 430, 480, 70, mode === "ar", "#a5d95c");
     ctx.font = `13px ${MONO}`;
     ctx.fillStyle = "#e9f6f3";
     ctx.fillText(`تلاش‌ها: ${S.times.length}   میانگین: ${isFinite(mean) ? fmt(mean, 0) : "—"} ms`, 262, 460);
@@ -312,18 +341,23 @@ export function PvLoopLab({ exp, onBack, initMode }: Props) {
     const X = (v: number) => gx + ((v - 30) / 160) * gw;
     const Y = (p: number) => gy + gh - (p / 160) * gh;
     ctx.strokeStyle = "#ff6f61"; ctx.lineWidth = 2.5;
+    if (mode !== "ar") { ctx.shadowColor = "#ff6f61"; ctx.shadowBlur = 9; }
     ctx.beginPath();
     pts.forEach((p, i) => (i === 0 ? ctx.moveTo(X(p.v), Y(p.p)) : ctx.lineTo(X(p.v), Y(p.p))));
     ctx.closePath();
     ctx.fillStyle = "rgba(255,111,97,0.12)"; ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
     const idx = Math.floor((S.tv * 24) % pts.length);
     const cur = pts[idx];
+    if (mode !== "ar") glow(ctx, X(cur.v), Y(cur.p), 26, [53, 211, 194], 0.4);
     ctx.fillStyle = "#35d3c2";
     ctx.beginPath(); ctx.arc(X(cur.v), Y(cur.p), 7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "rgba(233,246,243,0.9)";
+    ctx.beginPath(); ctx.arc(X(cur.v) - 2, Y(cur.p) - 2, 2.4, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "#8fbcb8"; ctx.font = `11px ${MONO}`;
     ctx.fillText("حجم (mL)", gx + gw - 70, gy + gh + 22);
     ctx.fillText("فشار (mmHg)", gx + 8, gy + 14);
-    hud(ctx, 620, 120, 290, 250, mode === "ar");
+    monitor(ctx, 620, 120, 290, 250, mode === "ar", "#ff6f61");
     ctx.font = `13px ${MONO}`;
     ctx.fillStyle = "#e9f6f3"; ctx.fillText(`V = ${fmt(cur.v, 0)} mL  P = ${fmt(cur.p, 0)}`, 640, 150);
     ctx.fillStyle = "#35d3c2"; ctx.fillText(`SV = ${fmt(vEd - vEs, 0)} mL`, 640, 178);

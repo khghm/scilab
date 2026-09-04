@@ -3,6 +3,7 @@ import { LiveChart, type SeriesDef } from "../components/Chart";
 import { LabShell, type FeedItem, type LabMode } from "../components/LabShell";
 import { Slider } from "../components/ui";
 import { fmt, useForce, useRaf } from "../lib/utils";
+import { medScene, monitor, medCross, glow, MONO, FA } from "./draw";
 import type { Experiment } from "../data/catalog";
 
 function sr(name: string, color: string, arr: { x: number; y: number }[]): SeriesDef {
@@ -63,14 +64,7 @@ export function EcgLab({ exp, onBack, initMode }: { exp: Experiment; onBack: () 
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     const W = 960, H = 560;
-    ctx.clearRect(0, 0, W, H);
-    if (!ar) {
-      ctx.fillStyle = "#04191d"; ctx.fillRect(0, 0, W, H);
-      // ECG paper grid
-      ctx.strokeStyle = "rgba(255,111,97,0.09)";
-      for (let x = 0; x < W; x += 20) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-      for (let y = 0; y < H; y += 20) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
-    }
+    medScene(ctx, W, H, ar, performance.now() / 1000);
     const oy = 330, amp = 190;
     const tMax = S.t, tMin = tMax - 6;
     ctx.strokeStyle = "#a5d95c";
@@ -96,9 +90,11 @@ export function EcgLab({ exp, onBack, initMode }: { exp: Experiment; onBack: () 
       ctx.fillText("R", X(last) - 4, oy - 1.08 * amp);
       ctx.fillText("T", X(last + 0.16 * rr) - 4, oy - 0.3 * amp);
     }
-    // heart icon pulsing
+    // heart icon pulsing with vital glow
     const ph = (S.t % rr) / rr;
-    const scale = 1 + 0.25 * Math.exp(-((ph - 0.22) ** 2) / (2 * 0.02 * 0.02));
+    const beatK = Math.exp(-((ph - 0.22) ** 2) / (2 * 0.02 * 0.02));
+    const scale = 1 + 0.25 * beatK;
+    if (!ar) glow(ctx, 830, 120, 60 + beatK * 30, [255, 111, 97], 0.2 + beatK * 0.3);
     ctx.save();
     ctx.translate(830, 120);
     ctx.scale(scale, scale);
@@ -108,20 +104,27 @@ export function EcgLab({ exp, onBack, initMode }: { exp: Experiment; onBack: () 
     ctx.bezierCurveTo(-30, 0, -20, -26, 0, -12);
     ctx.bezierCurveTo(20, -26, 30, 0, 0, 26);
     ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.35)"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(-8, -8, 6, 0, Math.PI * 2); ctx.stroke();
     ctx.restore();
-    // HUD
-    ctx.fillStyle = ar ? "rgba(4,25,29,0.6)" : "rgba(4,25,29,0.85)";
-    ctx.strokeStyle = "rgba(23,80,89,0.9)";
-    ctx.beginPath(); ctx.roundRect(60, 60, 360, 120, 10); ctx.fill(); ctx.stroke();
-    ctx.font = '600 44px "IBM Plex Mono", monospace';
+    // monitor-style vitals panel
+    monitor(ctx, 60, 60, 360, 128, ar, "#ff6f61");
+    medCross(ctx, 90, 84, 16, "#ff6f61");
+    ctx.font = '11px "IBM Plex Mono", monospace';
+    ctx.fillStyle = "#8fbcb8";
+    ctx.fillText("LEAD II  ·  25 mm/s", 110, 88);
+    ctx.font = '600 46px "IBM Plex Mono", monospace';
     ctx.fillStyle = hrNow > 100 ? "#ff6f61" : "#a5d95c";
-    ctx.fillText(`${fmt(hrNow, 0)}`, 80, 116);
+    if (!ar) { ctx.shadowColor = hrNow > 100 ? "#ff6f61" : "#a5d95c"; ctx.shadowBlur = 12; }
+    ctx.fillText(`${fmt(hrNow, 0)}`, 80, 146);
+    ctx.shadowBlur = 0;
     ctx.font = '14px "IBM Plex Mono", monospace';
     ctx.fillStyle = "#8fbcb8";
-    ctx.fillText("bpm", 176, 112);
+    ctx.fillText("bpm", 186, 142);
     ctx.fillStyle = "#e9f6f3";
-    ctx.fillText(`R–R = ${fmt(rr * 1000, 0)} ms`, 80, 146);
-    ctx.fillText(`SV=70mL → CO = ${fmt((hrNow * 70) / 1000, 1)} L/min`, 80, 168);
+    ctx.fillText(`R–R = ${fmt(rr * 1000, 0)} ms`, 250, 122);
+    ctx.fillStyle = "#35d3c2";
+    ctx.fillText(`CO = ${fmt((hrNow * 70) / 1000, 1)} L/min`, 250, 146);
   };
 
   return (
@@ -218,12 +221,7 @@ export function BloodPressureLab({ exp, onBack, initMode }: { exp: Experiment; o
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     const W = 960, H = 560;
-    ctx.clearRect(0, 0, W, H);
-    if (!ar) {
-      const g = ctx.createLinearGradient(0, 0, 0, H);
-      g.addColorStop(0, "#082229"); g.addColorStop(1, "#0b3038");
-      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    }
+    medScene(ctx, W, H, ar, performance.now() / 1000);
     // sphygmomanometer column
     const mx = 240, my = 90, mh = 380;
     ctx.fillStyle = "#04191d";
@@ -247,21 +245,30 @@ export function BloodPressureLab({ exp, onBack, initMode }: { exp: Experiment; o
     ctx.fillStyle = "#e9f6f3";
     ctx.font = '13px "IBM Plex Mono", monospace';
     ctx.fillText(`${fmt(pNow, 0)} mmHg`, mx - 20, my - 12);
-    // artery with pulsing flow
+    // artery with pulsing flow + vital glow
     const ay = 300;
     const pulse = 0.5 + 0.5 * Math.sin(tv.current * (Math.PI * 2) / rr);
+    if (!ar) glow(ctx, 600, ay, 260, [255, 111, 97], 0.06 + pulse * 0.08);
     ctx.strokeStyle = "#ff6f61";
     ctx.lineWidth = 14 + pulse * 8;
-    ctx.globalAlpha = 0.75;
+    if (!ar) { ctx.shadowColor = "#ff6f61"; ctx.shadowBlur = 14; }
+    ctx.globalAlpha = 0.8;
     ctx.beginPath(); ctx.moveTo(380, ay); ctx.bezierCurveTo(520, ay - 30, 640, ay + 30, 820, ay); ctx.stroke();
-    ctx.globalAlpha = 1;
-    // RBCs
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+    // inner highlight of artery wall
+    ctx.strokeStyle = "rgba(255,180,170,0.5)";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(390, ay - 4); ctx.bezierCurveTo(520, ay - 34, 640, ay + 26, 810, ay - 4); ctx.stroke();
+    // RBCs (biconcave discs)
     for (let i = 0; i < 10; i++) {
       const tt = ((tv.current * (60 + pulse * 40)) + i * 82) % 820;
       const x = 380 + tt * 0.54;
       const y = ay + Math.sin((x - 380) / 440 * Math.PI) * (tt % 2 ? 1 : -1) * 6 + ((i % 3) - 1) * 6;
+      if (!ar) glow(ctx, x, y, 12, [224, 85, 72], 0.35);
       ctx.fillStyle = "#e05548";
       ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "rgba(150,40,35,0.6)";
+      ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fill();
     }
     // pressure wave trace
     const oy = 460, amp = 70;
@@ -278,22 +285,26 @@ export function BloodPressureLab({ exp, onBack, initMode }: { exp: Experiment; o
     ctx.fillStyle = "#8fbcb8";
     ctx.font = '11px Vazirmatn, sans-serif';
     ctx.fillText("موج فشار شریانی", 380, oy + 36);
-    // HUD
-    ctx.fillStyle = ar ? "rgba(4,25,29,0.6)" : "rgba(4,25,29,0.8)";
-    ctx.strokeStyle = "rgba(23,80,89,0.9)";
-    ctx.beginPath(); ctx.roundRect(420, 90, 460, 130, 10); ctx.fill(); ctx.stroke();
-    ctx.font = '600 40px "IBM Plex Mono", monospace';
+    // monitor-style BP panel
+    monitor(ctx, 420, 90, 460, 140, ar, "#ff6f61");
+    ctx.font = '11px "IBM Plex Mono", monospace';
+    ctx.fillStyle = "#8fbcb8";
+    ctx.fillText("NIBP  ·  mmHg", 444, 112);
+    ctx.font = '600 42px "IBM Plex Mono", monospace';
     ctx.fillStyle = cls === "نرمال" ? "#a5d95c" : "#ff6f61";
-    ctx.fillText(`${fmt(sysE, 0)}/${fmt(diaE, 0)}`, 440, 144);
+    if (!ar) { ctx.shadowColor = cls === "نرمال" ? "#a5d95c" : "#ff6f61"; ctx.shadowBlur = 12; }
+    ctx.fillText(`${fmt(sysE, 0)}/${fmt(diaE, 0)}`, 440, 160);
+    ctx.shadowBlur = 0;
     ctx.font = '13px "IBM Plex Mono", monospace';
     ctx.fillStyle = "#8fbcb8";
-    ctx.fillText("mmHg", 640, 140);
+    ctx.fillText("mmHg", 654, 156);
     ctx.fillStyle = "#e9f6f3";
-    ctx.fillText(`MAP = ${fmt(map, 0)} mmHg`, 440, 174);
-    ctx.fillText(`فشار نبض = ${fmt(sysE - diaE, 0)} mmHg`, 440, 196);
+    ctx.fillText(`MAP = ${fmt(map, 0)}`, 440, 190);
+    ctx.fillStyle = "#35d3c2";
+    ctx.fillText(`PP = ${fmt(sysE - diaE, 0)}`, 440, 212);
     ctx.fillStyle = cls === "نرمال" ? "#a5d95c" : "#f2a83b";
     ctx.font = '13px Vazirmatn, sans-serif';
-    ctx.fillText(`طبقه‌بندی: ${cls}`, 680, 174);
+    ctx.fillText(`طبقه‌بندی: ${cls}`, 660, 190);
   };
 
   return (

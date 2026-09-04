@@ -3,6 +3,7 @@ import { LiveChart, type SeriesDef } from "../components/Chart";
 import { LabShell, type FeedItem, type LabMode } from "../components/LabShell";
 import { Slider } from "../components/ui";
 import { fmt, useForce, useRaf } from "../lib/utils";
+import { medScene, monitor, glow, MONO } from "./draw";
 import type { Experiment } from "../data/catalog";
 
 function sr(name: string, color: string, arr: { x: number; y: number }[]): SeriesDef {
@@ -76,16 +77,15 @@ export function SpirometryLab({ exp, onBack, initMode }: { exp: Experiment; onBa
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     const W = 960, H = 560;
-    ctx.clearRect(0, 0, W, H);
-    if (!ar) {
-      const g = ctx.createLinearGradient(0, 0, 0, H);
-      g.addColorStop(0, "#082229"); g.addColorStop(1, "#0b3038");
-      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    }
+    medScene(ctx, W, H, ar, performance.now() / 1000);
     // lungs
     const cx = 240, cy = 260;
     const fillFrac = S.vol / (vcPred + rvPred);
     const breathScale = 1 + fillFrac * 0.35;
+    if (!ar) {
+      glow(ctx, cx - 95, cy, 130 * breathScale, [255, 111, 97], 0.10 + fillFrac * 0.14);
+      glow(ctx, cx + 95, cy, 130 * breathScale, [255, 111, 97], 0.10 + fillFrac * 0.14);
+    }
     for (const side of [-1, 1]) {
       ctx.save();
       ctx.translate(cx + side * 95, cy);
@@ -260,12 +260,7 @@ export function Spo2Lab({ exp, onBack, initMode }: { exp: Experiment; onBack: ()
     const cv = canvasRef.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     const W = 960, H = 560;
-    ctx.clearRect(0, 0, W, H);
-    if (!ar) {
-      const g = ctx.createLinearGradient(0, 0, 0, H);
-      g.addColorStop(0, "#082229"); g.addColorStop(1, "#0b3038");
-      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    }
+    medScene(ctx, W, H, ar, performance.now() / 1000);
     // dissociation curve
     const gx = 120, gy = 80, gw = 440, gh = 330;
     ctx.strokeStyle = "rgba(143,188,184,0.4)";
@@ -313,16 +308,21 @@ export function Spo2Lab({ exp, onBack, initMode }: { exp: Experiment; onBack: ()
     ctx.setLineDash([]);
     ctx.fillStyle = "#b388ff";
     ctx.fillText(`P50=${fmt(p50, 0)}`, X(p50) - 16, gy + gh + 16);
-    // pulse oximeter readout
-    ctx.fillStyle = ar ? "rgba(4,25,29,0.6)" : "rgba(4,25,29,0.85)";
-    ctx.strokeStyle = "rgba(23,80,89,0.9)";
-    ctx.beginPath(); ctx.roundRect(640, 110, 270, 200, 14); ctx.fill(); ctx.stroke();
+    // pulse oximeter readout (monitor style)
+    const spo2Col = satAlv < 90 ? "#ff6f61" : satAlv < 95 ? "#f2a83b" : "#35d3c2";
+    monitor(ctx, 640, 110, 270, 200, ar, spo2Col);
+    if (!ar) glow(ctx, 775, 170, 90, [53, 211, 194], 0.08);
     const pulse = 0.5 + 0.5 * Math.sin(tv.current * 4.8);
+    ctx.font = '11px "IBM Plex Mono", monospace';
+    ctx.fillStyle = "#8fbcb8";
+    ctx.fillText("SpO₂  ·  Pulse Ox", 664, 132);
     ctx.font = '600 56px "IBM Plex Mono", monospace';
-    ctx.fillStyle = satAlv < 90 ? "#ff6f61" : satAlv < 95 ? "#f2a83b" : "#35d3c2";
-    ctx.fillText(`${fmt(satAlv, 0)}`, 668, 186);
+    ctx.fillStyle = spo2Col;
+    if (!ar) { ctx.shadowColor = spo2Col; ctx.shadowBlur = 14; }
+    ctx.fillText(`${fmt(satAlv, 0)}`, 668, 196);
+    ctx.shadowBlur = 0;
     ctx.font = '16px "IBM Plex Mono", monospace';
-    ctx.fillText("٪ SpO₂", 760, 182);
+    ctx.fillText("٪", 756, 190);
     ctx.font = '13px "IBM Plex Mono", monospace';
     ctx.fillStyle = "#e9f6f3";
     ctx.fillText(`HR = ${fmt(72 + S.alt / 80, 0)} bpm`, 668, 220);
