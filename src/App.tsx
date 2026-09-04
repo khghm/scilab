@@ -21,6 +21,10 @@ import { MitosisLab, LotkaLab, PcrLab } from "./labs/BioC";
 import { PedigreeLab, BloodTypeLab, YeastLab } from "./labs/BioD";
 import { RlcLab, OpampLab, MosfetLab } from "./labs/ElecX";
 import { WheatstoneLab, PwmLab } from "./labs/ElecMedA";
+import { KmapLab } from "./labs/KmapLab";
+import { PipelineLab } from "./labs/PipelineLab";
+import { PidLab } from "./labs/PidLab";
+import { ArduinoIdeLab } from "./labs/ArduinoIdeLab";
 import { FlipFlopLab, CounterLab, AdderLab } from "./labs/LogicLabs";
 import { AluLab, CpuLab } from "./labs/ArchLabs";
 import { LineFollowerLab, RobotArmLab, ObstacleLab } from "./labs/RoboticsLabs";
@@ -88,6 +92,10 @@ const LABS: Record<LabKind, ComponentType<{ exp: Experiment; onBack: () => void;
   blink: BlinkLab,
   adcpot: AdcLab,
   pwmservo: PwmServoLab,
+  kmap: KmapLab,
+  pipeline: PipelineLab,
+  pid: PidLab,
+  arduinoide: ArduinoIdeLab,
   // medicine
   ecg: EcgLab,
   bloodpressure: BloodPressureLab,

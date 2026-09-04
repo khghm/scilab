@@ -7,6 +7,7 @@ export type LabKind =
   | "genetics" | "culture" | "mitosis" | "lotka" | "pcr" | "pedigree" | "bloodtype" | "yeast" | "elodea"
   | "seriesparallel" | "rcfilter" | "logicgate" | "timer555" | "bjt" | "rlc" | "opamp" | "mosfet" | "wheatstone" | "pwm"
   | "flipflop" | "counter" | "adder" | "alu" | "cpu" | "linefollower" | "robotarm" | "obstacle" | "blink" | "adcpot" | "pwmservo"
+  | "kmap" | "pipeline" | "pid" | "arduinoide"
   | "ecg" | "bloodpressure" | "spirometry" | "spo2" | "renal" | "glucose" | "reflex" | "pvloop";
 
 export interface Experiment {
@@ -206,6 +207,18 @@ export const EXPERIMENTS: Experiment[] = [
   E("e-pwmservo", "electronics", "pwmservo", "آردوینو: سروو و map()", "میکروکنترلر",
     "زنجیره پتانسیومتر→ADC→map()→سروو با پالس ۱۰۰۰ تا ۲۰۰۰ میکروثانیه و نمودار زاویه زنده.",
     ["HS-PS2-5"], "IB DP Physics 5.3", "Enrichment", 2, 25),
+  E("e-kmap", "electronics", "kmap", "نقشه کارنو و کمینه‌سازی", "مدارهای منطقی — پیشرفته",
+    "نقشه کارنو ۳ و ۴ متغیره تعاملی با حل‌کننده Quine-McCluskey؛ گروه‌بندی بصری، خانه‌های بی‌تفاوت و فرم کمینه SOP.",
+    ["HS-PS2-5"], "IB DP Physics 5.5", "Enrichment", 3, 35),
+  E("e-pipeline", "electronics", "pipeline", "پردازنده خط‌لوله‌ای ۵ مرحله‌ای", "معماری کامپیوتر — پیشرفته",
+    "خط لوله IF/ID/EX/MEM/WB با تشخیص خطر RAW، درج حباب، فورواردینگ، نمودار گانت و محاسبه IPC و سرعت‌افزایی.",
+    ["HS-PS2-5"], "IB DP Physics 5.5", "Enrichment", 3, 40),
+  E("e-pid", "electronics", "pid", "کنترل‌کننده PID و پاسخ پله", "رباتیک — کنترل",
+    "شبیه‌سازی گیاه مرتبه‌اول با PID و آنتی‌وینداپ؛ محاسبه کمی فراجهش، زمان صعود، زمان نشست و خطای ماندگار.",
+    ["HS-PS2-5"], "IB DP Physics 5.5", "Enrichment", 3, 35),
+  E("e-arduinoide", "electronics", "arduinoide", "IDE آردوینو با مفسر و دیباگر", "میکروکنترلر — پیشرفته",
+    "ویرایشگر کد با کامپایلر به کد میانی؛ اجرای گام‌به‌گام، حلقه و شرط، متغیرها، مانیتور سریال و نمایش LED/سروو.",
+    ["HS-PS2-5"], "IB DP Physics 5.3", "Enrichment", 3, 45),
 
   // ---------------- MEDICINE (8) ----------------
   E("m-ecg", "medicine", "ecg", "نوار قلب (ECG) و ریتم", "فیزیولوژی قلب",
