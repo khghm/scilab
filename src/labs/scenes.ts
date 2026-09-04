@@ -78,10 +78,16 @@ function chips(ctx: Ctx, x: number, y: number, items: { label: string; value: st
 }
 
 function title(ctx: Ctx, text: string, accent: string) {
-  ctx.fillStyle = accent; ctx.font = `700 15px ${FA}`;
-  ctx.fillText(text, 26, 30);
-  ctx.strokeStyle = hexA(accent, 0.5); ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(26, 38); ctx.lineTo(26 + Math.min(320, ctx.measureText(text).width + 10), 38); ctx.stroke();
+  ctx.font = `700 17px ${FA}`;
+  const tw = ctx.measureText(text).width;
+  ctx.fillStyle = "rgba(4,20,24,0.66)";
+  rr(ctx, 18, 12, tw + 26, 36, 9); ctx.fill();
+  ctx.strokeStyle = hexA(accent, 0.45); ctx.lineWidth = 1.3;
+  rr(ctx, 18, 12, tw + 26, 36, 9); ctx.stroke();
+  ctx.fillStyle = accent;
+  ctx.fillText(text, 31, 36);
+  ctx.fillStyle = hexA(accent, 0.9);
+  ctx.fillRect(18, 50, Math.min(140, tw * 0.5), 2.5);
 }
 
 const ro = (spec: LabSpecDef, p: P) => spec.readouts(p);

@@ -6,6 +6,7 @@ import { fmt, useForce, useRaf } from "../lib/utils";
 import { SUBJECTS, type Experiment, type Subject } from "../data/catalog";
 import { bioScene, chemScene, FA, glow, medScene, MONO, physScene, rr } from "./draw";
 import { SPECS, type LabSpecDef } from "./specs1";
+import { SCENES } from "./scenes";
 export { };
 
 type Props = { exp: Experiment; onBack: () => void; initMode?: LabMode };
@@ -110,6 +111,12 @@ export function SpecLab({ exp, onBack, initMode }: Props) {
     if (!cv || !ctx) return;
     const W = 960, H = 560;
     sceneOf[exp.subject](ctx, W, H, mode === "ar", performance.now() / 1000);
+
+    const sceneFn = SCENES[exp.id];
+    if (sceneFn) {
+      sceneFn(ctx, params, S.tp, mode === "ar", spec);
+      return;
+    }
 
     const accent = sub.color;
     const ml = 74, mr = 30, mt = 34, mb = 58;
